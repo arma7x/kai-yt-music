@@ -1,0 +1,80 @@
+<div class="kui-flex-wrap">
+  <style>
+  h1, h2, h3, h4, h5, h6, ul, p, pre {
+    margin: 0;
+    padding: 0;
+  }
+  @media only screen and (orientation : portrait) {
+    .img-holder-hp {
+      margin-left: -30px;
+      height: 160px;
+      width: 160px;
+    }
+  }
+  @media screen and (orientation: landscape) {
+    .img-holder-hp {
+      margin-left: -30px;
+      height: 80px;
+      width: 80px;
+    }
+  }
+  .li-style {
+    padding-left:5px;
+    padding:right:5px;
+  }
+  .wrapper {
+    width:100%;
+    height:60px;
+    display:flex;
+    flex-direction:row;
+  }
+  .wrapper-album {
+    width:50px;
+    padding-top:5px;
+  }
+  .wrapper-album-img {
+    object-fit:cover;
+    max-width:50px;
+    max-height:50px;
+  }
+  .wrapper-info {
+    height: 50px;
+    display: flex;
+    flex-grow:1;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px 5px 0px 5px;
+    margin-bottom: 5px;
+    overflow: hidden;
+  }
+  .wrapper-info-child {
+    font-size:10px;
+    white-space: pre-wrap!important;
+    word-break: break-word!important;
+  }
+  </style>
+  <ul class="kui-list kai-container">
+    {{#results}}
+      {{#isVideo}}
+        <li class="searchNav li-style">
+          <div class="wrapper">
+            <div class="wrapper-album">
+              <img src="{{ thumbnail_src }}" class="wrapper-album-img" width="50px" height="50px"/>
+            </div>
+            <div class="wrapper-info">
+              <pre class="wrapper-info-child">{{ title }}</pre>
+              <pre class="wrapper-info-child">Duration: {{ duration }}</pre>
+            </div>
+          </div>
+        </li>
+      {{/isVideo}}
+      {{^isVideo}}
+        <li class="searchNav li-style">
+          <div class="wrapper" style="justify-content:center;align-items:center;">
+            NEXT PAGE
+          </div>
+        </li>
+      {{/isVideo}}
+    {{/results}}
+  </ul>
+</div>

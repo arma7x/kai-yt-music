@@ -1,0 +1,1079 @@
+/**
+ * ===========================
+ * **************** Agenda ***
+ *
+ * 01. Basic
+ * 02. Alignment
+ * 03. Color
+ * 04. Font
+ * 05. Header
+ * 06. Separator
+ * 07. Software key
+ * 08. Toast
+ * 09. List
+ * 10. Options menu
+ * 11. Button
+ * 12. Input
+ * 13. Table
+ * 14. Progress
+ * ===========================
+ */
+
+@font-face {
+  font-family: 'kai-icons';
+  src:  url('fonts/kai-icons.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[class^="kai-icon-"], [class*=" kai-icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'kai-icons' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.kai-icon-arrow:before {
+  content: "\e900";
+}
+
+.kai-icon-checkbox-checked:before {
+  content: "\e901";
+}
+
+.kai-icon-checkbox-unchecked:before {
+  content: "\e902";
+}
+
+.kai-icon-radio-button-selected:before {
+  content: "\e906";
+}
+
+.kai-icon-radio-button-unselected:before {
+  content: "\e90f";
+}
+
+.kai-icon-bluetooth:before {
+  content: "\e903";
+}
+
+.kai-icon-calendar:before {
+  content: "\e904";
+}
+
+.kai-icon-camera:before {
+  content: "\e905";
+}
+
+.kai-icon-contacts:before {
+  content: "\e907";
+}
+
+.kai-icon-download:before {
+  content: "\e908";
+}
+
+.kai-icon-email:before {
+  content: "\e909";
+}
+
+.kai-icon-favorite-off:before {
+  content: "\e90a";
+}
+
+.kai-icon-favorite-on:before {
+  content: "\e90b";
+}
+
+.kai-icon-message:before {
+  content: "\e90c";
+}
+
+.kai-icon-mic:before {
+  content: "\e90d";
+}
+
+.kai-icon-phone:before {
+  content: "\e90e";
+}
+
+.kai-icon-search:before {
+  content: "\e910";
+}
+
+.kai-icon-settings:before {
+  content: "\e911";
+}
+
+.kai-icon-video:before {
+  content: "\e912";
+}
+
+.kai-icon-wifi:before {
+  content: "\e913";
+}
+
+/* ============== Basic ============== */
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Open Sans';
+}
+
+h1, h2, h3, h4, h5, ul, p {
+    margin: 0;
+    padding: 0;
+}
+
+.statusbar-placeholder {
+    background-color: #000000;
+    height: 26px;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    font-family: 'Open Sans';
+}
+
+.kui-flex-wrap {
+  height: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.kui-router-m-top {
+    margin-top: 28px;
+}
+
+.kui-router-m-bottom {
+    margin-bottom: 30px;
+}
+
+.kui-router-h-hdr {
+  height: calc(100vh - 28px) !important;
+  overflow-y: hidden;
+}
+
+.kui-router-h-sk {
+  height: calc(100vh - 30px) !important;
+  overflow-y: hidden;
+}
+
+.kui-router-h-hdr-sk {
+  height: calc(100vh - 58px) !important;
+  overflow-y: hidden;
+}
+
+.kui-tab-h-28 {
+  height: calc(100vh - 28px) !important;
+  overflow-y: hidden;
+}
+
+.kui-tab-h-30 {
+  height: calc(100vh - 30px) !important;
+  overflow-y: hidden;
+}
+
+.kui-tab-h-58 {
+  height: calc(100vh - 58px) !important;
+  overflow-y: hidden;
+}
+
+.kui-tab-h-60 {
+  height: calc(100vh - 60px) !important;
+  overflow-y: hidden;
+}
+
+.kui-tab-h-88 {
+  height: calc(100vh - 88px) !important;
+  overflow-y: hidden;
+}
+
+.kui-content-area {
+    overflow: hidden;
+    position: relative;
+}
+
+.kui-overlay {
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0, .7);
+    position: absolute;
+    top: 0;
+    visibility: hidden;
+    z-index: -1;
+}
+
+.kui-overlay-visible {
+    height: calc(100% - 30px);
+    z-index: 1;
+    visibility: visible;
+}
+
+.kui-overlay-visible-no-sk {
+    height: calc(100%);
+    z-index: 1;
+    visibility: visible;
+}
+
+.kui-text-upcase {
+    text-transform: uppercase;
+}
+
+/* ============== Alignment ============== */
+.kui-text-left {
+    text-align: left;
+}
+
+.kui-text-center {
+    text-align: center;
+}
+
+.kui-text-right {
+    text-align: right;
+}
+
+/* ============== Color ============== */
+.kui-color-purple {
+    color: #8500dc;
+}
+
+.kui-color-rose {
+    color: #cd006f;
+}
+
+.kui-color-red {
+    color: #ff0e0e;
+}
+
+.kui-color-lime {
+    color: #6b9a23;
+}
+
+.kui-color-cyan {
+    color: #00b1b4;
+}
+
+.kui-color-blue {
+    color: #0071dd;
+}
+
+.kui-color-orange {
+    color: #ff4b00;
+}
+
+.kui-color-dark-gray {
+    color: #323232;
+}
+
+/* ============== Font ============== */
+.kui-h1 {
+    font-size: 17px;
+    font-weight: 300;
+}
+
+.kui-h2 {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.kui-h3,
+.kui-h4,
+.kui-sec {
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.kui-h5 {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.kui-pri,
+.kui-text,
+.kui-btn {
+    font-size: 17px;
+    font-weight: 400;
+}
+
+.kui-thi {
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.kui-link {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+/* ============== Header ============== */
+.kui-header {
+    height: 28px;
+    line-height: 28px;
+    background-color: #000000;
+    color: #fff;
+    text-align: center;
+    vertical-align: middle;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    margin-bottom: 28px;
+    font-weight: bold;
+    z-index: 9;
+    cursor: none;
+    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -moz-user-select: none;
+}
+
+/* ============== Separator ============== */
+.kui-separator {
+    color: #6a6a6a;
+    height: 28px;
+    background-color: #e6e6e6;
+    line-height: 28px;
+    padding-left: 10px;
+}
+
+/* ============== Software key ============== */
+.kui-software-key {
+    height: 30px;
+    line-height: 30px;
+    background-color: #cccccc;
+    display: flex;
+    align-items: center;
+    padding: 0px;
+    color: #323232;
+    position: fixed;
+    width:  100%;
+    bottom: 0;
+    z-index: 9;
+    -moz-user-select: none;
+}
+
+.kui-software-key-dark {
+    height: 30px;
+    line-height: 30px;
+    background-color: #000;
+    display: flex;
+    align-items: center;
+    padding: 0px;
+    color: #fff;
+    position: fixed;
+    width:  100%;
+    bottom: 0;
+    z-index: 9;
+}
+
+.kui-software-key-left {
+    width: 32%;
+    text-align: left;
+    padding-left: 5px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.kui-software-key-center {
+    width: 36%;
+    text-align: center;
+    font-weight: 600;
+}
+
+.kui-software-key-right {
+    width: 32%;
+    text-align: right;
+    padding-right: 5px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* ============== Toast ============== */
+.kui-toast {
+    top: 0;
+    z-index: -1;
+    position: fixed;
+    min-height: 32px;
+    color: #fff;
+    text-align: center;
+    width: 100%;
+    background-color: #323232;
+    visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5px;
+}
+
+.kui-toast-visible {
+    z-index: 10;
+    visibility: visible;
+}
+
+.kui-toast .kui-pri {
+    margin: 0;
+}
+
+.kui-toast-shadow {
+    height: 6px;
+    background-image: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%);
+}
+
+.checkbox, .radio {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  cursor: pointer;
+}
+
+.checkbox::-moz-selection, .radio::-moz-selection {
+  background: transparent;
+}
+
+.checkbox::selection, .radio::selection {
+  background: transparent;
+}
+
+.radio input + span, .checkbox input + span {
+  display: inline-block;
+  vertical-align: middle;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+}
+
+.radio input + span::after {
+  font-family: 'kai-icons' !important;
+  content: "\e90f";
+  display: block;
+  -webkit-transform: scale(1);
+  transform: scale(1);
+  -webkit-transition: -webkit-transform .2s;
+  transition: -webkit-transform .2s;
+  transition: transform .2s;
+  transition: transform .2s, -webkit-transform .2s;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.checkbox input + span::after {
+  font-family: 'kai-icons' !important;
+  content: "\e902";
+  display: block;
+  -webkit-transform: scale(1);
+  transform: scale(1);
+  -webkit-transition: -webkit-transform .2s;
+  transition: -webkit-transform .2s;
+  transition: transform .2s;
+  transition: transform .2s, -webkit-transform .2s;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.radio input:checked + span::after {
+  font-family: 'kai-icons' !important;
+  content: "\e906";
+  -webkit-transform: scale(1);
+  transform: scale(1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.checkbox input:checked + span::after {
+  font-family: 'kai-icons' !important;
+  content: "\e901";
+  -webkit-transform: scale(1);
+  transform: scale(1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.checkbox input, .radio input {
+  position: absolute;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.checkbox input + span::after, .radio input + span::after {
+  font-size: 20px;
+  font-weight: normal;
+  color: #000000;
+}
+
+/* ============== List ============== */
+.kui-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    flex: 1;
+}
+
+.kui-list li {
+    background-color: #fff;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kui-list li .kui-list-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background-color: #2f3235;
+    margin-right: 10px;
+}
+
+.kui-list-cont p {
+    margin: 4px 0;
+}
+
+.kui-list-cont .kui-pri {
+    color: #323232;
+}
+
+.kui-list-cont .kui-sec {
+    color: #6a6a6a;
+}
+
+.kui-list li.focus {
+    background-color: #000000;
+    outline: 0;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kui-list .focus button.kui-btn {
+    outline: 0;
+    color: #fff;
+    background-color: #000000;
+}
+
+.kui-list li:focus .kui-pri,
+.kui-list li:focus .kui-sec {
+    color: #fff;
+}
+
+/* ============== Options Menu ============== */
+.kui-option-menu {
+    background-color:white;
+    position:absolute;
+    bottom:0;
+    width:100%;
+    overflow: hidden;
+}
+
+.kui-option-menu .kui-option-title {
+    margin: 0;
+    color: #323232;
+    text-align: center;
+    background-color: #d8d8d8;
+    height: 28px;
+    line-height: 28px;
+}
+
+.kui-option-menu .kui-option-body {
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+}
+
+.kui-options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+}
+
+.kui-options li {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    height: 50px;
+    padding: 0 10px;
+    background-color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kui-options li:focus {
+    outline: 0;
+    color: #fff;
+    background-color: #000000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kui-options li.focus {
+    outline: 0;
+    color: #fff;
+    background-color: #000000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kui-options li.focus .radio input:checked + span, .kui-options li.focus .checkbox input:checked + span  {
+  background: #000000;
+}
+
+.kui-options li.focus .radio input + span::after, .kui-options li.focus .checkbox input + span::after {
+  color: #fff;
+}
+
+
+/* ============== Button ============== */
+button.kui-btn {
+    width: 100%;
+    height: 36px;
+    border-radius: 2px;
+    background: #ccc;
+    text-align: center;
+    color: #323232;
+    border: 0;
+    display: block;
+    margin: auto;
+}
+
+button.kui-btn:focus {
+    outline: 0;
+    color: #fff;
+    background-color: #000000;
+}
+
+/* ============== Input ============== */
+.kui-input-holder {
+    height: 76px;
+    padding: 7px 10px;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+
+.kui-input-holder.kui-focus-within {
+    background-color: #000000;
+    outline: 0;
+}
+
+.kui-input-label {
+    color: #323232;
+    display: block;
+    padding-bottom: 8px;
+}
+
+.kui-input-holder.kui-focus-within .kui-input-label {
+    color: #fff;
+}
+
+.kui-input {
+    height: 36px;
+    width: 100%;
+    border-radius: 2px;
+    padding-left: 10px;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    border: 1px solid #aaaaaa;
+}
+
+.kui-input ::-moz-placeholder,
+.kui-input :-moz-placeholder {
+    color: #323232;
+}
+
+.kui-input:focus {
+    outline: 0;
+}
+
+/* ============== Table ============== */
+.kui-table,
+.kui-table th,
+.kui-table td {
+    border: 1px solid #000000;
+    border-collapse: collapse;
+}
+
+.kui-table {
+    width: 100%;
+}
+
+.kui-table thead {
+    background-color: #000000;
+    color: #fff;
+}
+
+.kui-table tr:focus {
+    outline: 0;
+    background-color: #000000;
+    color: #fff;
+}
+
+.kui-table td {
+    width: 50%;
+    padding: 4px 5px;
+}
+
+.kui-table td:last-child {
+    text-align: right;
+}
+
+/* ============== Progress ============== */
+.progress {
+    height: 60px;
+    background: #fff;
+    padding: 10px 10px;
+    box-sizing: border-box;
+}
+
+.progress:focus .progress-label {
+    color: #fff;
+}
+
+.progress label {
+    color: #332233;
+    display: inline-block;
+    width: 100%;
+}
+
+.progress-label {
+    float: left;
+}
+
+.progress-value {
+    float: right;
+    padding-top: 3px;
+}
+
+.progress input {
+    width: 100%;
+    outline: none;
+    height: 5px;
+    border-radius: 3px;
+}
+
+.progress input::-moz-range-thumb {
+    cursor: pointer;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: 13px;
+    height: 13px;
+}
+
+.progress input,
+.progress input::-moz-range-thumb,
+.progress input::-moz-range-progress,
+.progress input::-moz-range-track {
+    -moz-appearance: none;
+    appearance: none;
+    background: #000000;
+}
+
+/* KaiOS portrait devices (240x320) */
+@media only screen and (orientation : portrait) {
+
+    .kai-container {
+      max-width: 240px;
+    }
+
+    .kui-content-area {
+        max-height: 236px;
+    }
+
+    .kui-option-menu {
+        max-height: 288px;
+    }
+
+    .kui-options {
+        max-height: 200px;
+    }
+}
+
+/* KaiOS landscape devices (320x240) */
+@media screen and (orientation: landscape) {
+
+    .kai-container {
+      max-width: 320px;
+    }
+
+    .kui-content-area {
+        max-height: 156px;
+    }
+
+    .kui-option-menu {
+        max-height: 128px;
+    }
+
+    .kui-options {
+        max-height: 100px;
+    }
+}
+
+/*** The End ******/
+
+/* ============== Tab ============== */
+.kui-tab {
+    list-style: none;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    white-space: nowrap;
+    background-color: #e6e6e6;
+    height: 30px;
+    line-height: 30px;
+    vertical-align: middle;
+    display: flex;
+    align-items: center;
+}
+
+.kui-tab li {
+    background-color: #e6e6e6;
+    height: 17px;
+    line-height: 17px;
+    display: inline;
+    margin: 2px 0px 2px 2px;
+    padding: 0px 3px;
+    font-size: 14px;
+    text-align: center;
+    color: #8A8A8A;
+    font-weight: bold;
+    border-bottom: 3px solid transparent;
+}
+
+.kui-tab li.focus {
+    outline: 0;
+    color: #000;
+    border-bottom: 3px solid #000000;
+}
+
+.kui-tab li:focus {
+    outline: 0;
+    color: #000;
+    border-bottom: 3px solid #000000;
+}
+
+.kui-date-hidden {
+    opacity: 0;
+}
+
+.kai-focus {
+    background-color: #000000;
+    color: #fff!important;
+}
+
+.kai-404 {
+  text-align: center;
+  padding-top: calc(0.35 * 100vh);
+}
+
+.kui-row-center {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.kai-text-center {
+    text-align: center;
+}
+
+.kai-container {
+    padding: 0px;
+    word-wrap: break-word;
+}
+
+.kai-padding-5 {
+    padding: 5px!important;
+}
+
+.kai-margin-5 {
+    margin: 5px!important;
+}
+
+
+.kui-flex-grow {
+    flex-grow: 1;
+}
+
+.kai-h-10 {
+    height: 10%;
+}
+
+.kai-h-20 {
+    height: 20%;
+}
+
+.kai-h-30 {
+    height: 30%;
+}
+
+.kai-h-40 {
+    height: 40%;
+}
+
+.kai-h-50 {
+    height: 50%;
+}
+
+.kai-h-60 {
+    height: 60%;
+}
+
+.kai-h-70 {
+    height: 70%;
+}
+
+.kai-h-80 {
+    height: 80%;
+}
+
+.kai-h-90 {
+    height: 90%;
+}
+
+.kai-h-100 {
+    height: 100%;
+}
+
+.kui-lcr-container {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    align-content: space-evenly;
+}
+
+.kai-left-col {
+  width:100%;text-align:center;
+}
+
+.kai-center-col {
+  width:100%;text-align:center;border-style:solid;border-width:0px 0px 0px 1px;border-color:#fff #fff #fff #e6e6e6;
+}
+
+.kai-right-col {
+  width:100%;text-align:center;border-style:solid;border-width:0px 0px 0px 1px;border-color:#fff #fff #fff #e6e6e6;
+}
+
+.kai-lcr-top {
+  color:#323232;padding:15px 0;
+}
+
+.kai-lcr-mid {
+  color:#000000;font-size:20px;padding:15px 0;
+}
+
+.kai-lcr-bottom {
+  color:#323232;padding:15px 0;
+}
+
+.kai-loading {
+  z-index: 9;
+  top:0;
+  position:fixed;
+  background:#cccccc;
+  width:100%;
+  height:4px;
+}
+
+.slider{
+  position:absolute;
+  width:98%;
+  height:4px;
+}
+
+.line{
+  position:absolute;
+  background:#cccccc;
+  width:100%;
+  height:4px;
+}
+
+.break{
+  position:absolute;
+  background:#000000;
+  width:2%;
+  height:4px;
+}
+
+.dot1{
+  -webkit-animation: loading 2s infinite;
+  -moz-animation: loading 2s infinite;
+  -ms-animation: loading 2s infinite;
+  -o-animation: loading 2s infinite;
+  animation: loading 2s infinite;
+}
+
+.dot2{
+  -webkit-animation: loading 2s 0.5s infinite;
+  -moz-animation: loading 2s 0.5s infinite;
+  -ms-animation: loading 2s 0.5s infinite;
+  -o-animation: loading 2s 0.5s infinite;
+  animation: loading 2s 0.5s infinite;
+}
+
+.dot3{
+  -webkit-animation: loading 2s 1s infinite;
+  -moz-animation: loading 2s 1s infinite;
+  -ms-animation: loading 2s 1s infinite;
+  -o-animation: loading 2s 1s infinite;
+  animation: loading 2s 1s infinite;
+}
+
+@keyframes "loading" {
+  from { left: 0; }
+  to { left: 100%; }
+}
+
+@-moz-keyframes loading {
+  from { left: 0; }
+  to { left: 100%; }
+}
+
+@-webkit-keyframes "loading" {
+  from { left: 0; }
+  to { left: 100%; }
+}
+
+@-ms-keyframes "loading" {
+  from { left: 0; }
+  to { left: 100%; }
+}
+
+@-o-keyframes "loading" {
+  from { left: 0; }
+  to { left: 100%; }
+}
+
+.sr-only,
+.sr-only-focusable:not(:focus) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
