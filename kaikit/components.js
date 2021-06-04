@@ -335,7 +335,10 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
           $router.hideOptionMenu();
         }
         if (typeof selectCb === 'function') {
-          selectCb(data);
+          const d = options[this.verticalNavIndex];
+          if (d) {
+            selectCb(d);
+          }
         }
         if (closeCb) {
           closeCb();

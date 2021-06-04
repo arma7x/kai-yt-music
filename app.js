@@ -1,41 +1,9 @@
-var xhr = function(method, url, data={}, query={}, headers={}) {
-  return new Promise((resolve, reject) => {
-    var xhttp = new XMLHttpRequest({ mozSystem: true });
-    var _url = new URL(url);
-    for (var y in query) {
-      _url.searchParams.set(y, query[y]);
-    }
-    url = _url.origin + _url.pathname + '?' + _url.searchParams.toString();
-    xhttp.onreadystatechange = function() {
-      if (this.readyState == 4) {
-        if (this.status >= 200 && this.status <= 299) {
-          try {
-            const response = JSON.parse(xhttp.response);
-            resolve({ raw: xhttp, response: response});
-          } catch (e) {
-            resolve({ raw: xhttp, response: xhttp.responseText});
-          }
-        } else {
-          try {
-            const response = JSON.parse(xhttp.response);
-            reject({ raw: xhttp, response: response});
-          } catch (e) {
-            reject({ raw: xhttp, response: xhttp.responseText});
-          }
-        }
-      }
-    };
-    xhttp.open(method, url, true);
-    for (var x in headers) {
-      xhttp.setRequestHeader(x, headers[x]);
-    }
-    if (Object.keys(data).length > 0) {
-      xhttp.send(JSON.stringify(data));
-    } else {
-      xhttp.send();
-    }
-  });
+if (navigator.mozAudioChannelManager) {
+  navigator.mozAudioChannelManager.volumeControlChannel = 'content';
 }
+
+const PLAYER = document.createElement("audio");
+PLAYER.volume = 1;
 
 window.addEventListener("load", function() {
 
@@ -60,7 +28,59 @@ window.addEventListener("load", function() {
     },
     methods: {
       selected: function(vid) {
-        console.log(vid);
+        this.$router.showLoading();
+        getLinks(vid.id)
+        .then((links) => {
+          var audio = [];
+          links.forEach((link) => {
+            if (link.mimeType.indexOf('audio') > -1) {
+              var br = parseInt(link.bitrate);
+              if (br > 999) {
+                br = Math.round(br/1000);
+              }
+              link.text = link.mimeType + '(' + br.toString() + 'kbps)';
+              audio.push(link);
+            }
+          });
+          console.log(audio);
+          if (audio.length > 0) {
+            this.methods.showPlayOption(audio);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          this.$router.hideLoading();
+        });
+      },
+      showPlayOption: function(formats) {
+        this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
+          this.methods.playAudio(selected);
+        }, () => {}, 0);
+      },
+      playAudio: function(obj) {
+        if (obj.url != null) {
+          console.log(obj.url);
+          PLAYER.mozAudioChannelType = 'content';
+          PLAYER.src = obj.url;
+          PLAYER.play();
+        } else {
+          this.$router.showLoading();
+          decryptSignature(obj.signatureCipher, obj.player)
+          .then((url) => {
+            console.log(url);
+            PLAYER.mozAudioChannelType = 'content';
+            PLAYER.src = url;
+            PLAYER.play();
+          })
+          .catch((err) => {
+            console.log(err);
+          })
+          .finally(() => {
+            this.$router.hideLoading();
+          });
+        }
       },
       search: function(q = '') {
         this.$router.showLoading();
