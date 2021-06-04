@@ -53,7 +53,6 @@ window.addEventListener("load", function() {
     verticalNavClass: '.searchNav',
     templateUrl: document.location.origin + '/templates/search.html',
     mounted: function() {
-      navigator.spatialNavigationEnabled = false;
       this.$router.setHeaderTitle('Search');
     },
     unmounted: function() {
@@ -146,7 +145,46 @@ window.addEventListener("load", function() {
     softKeyText: { left: 'Search', center: '', right: '' },
     softKeyListener: {
       left: function() {
-        this.methods.search('miki matsubara');
+        const urlDialog = Kai.createDialog('Search', '<div><input id="search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, 'Go', undefined, 'Cancel', undefined, undefined, this.$router);
+        urlDialog.mounted = () => {
+          setTimeout(() => {
+            setTimeout(() => {
+              this.$router.setSoftKeyText('Cancel' , '', 'Go');
+            }, 103);
+            const SEARCH_INPUT = document.getElementById('search-input');
+            if (!SEARCH_INPUT) {
+              return;
+            }
+            SEARCH_INPUT.focus();
+            SEARCH_INPUT.addEventListener('keydown', (evt) => {
+              switch (evt.key) {
+                case 'Backspace':
+                case 'EndCall':
+                  if (document.activeElement.value.length === 0) {
+                    this.$router.hideBottomSheet();
+                    setTimeout(() => {
+                      SEARCH_INPUT.blur();
+                    }, 100);
+                  }
+                  break
+                case 'SoftRight':
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    SEARCH_INPUT.blur();
+                    this.methods.search(SEARCH_INPUT.value);
+                  }, 100);
+                  break
+                case 'SoftLeft':
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    SEARCH_INPUT.blur();
+                  }, 100);
+                  break
+              }
+            });
+          });
+        }
+        this.$router.showBottomSheet(urlDialog);
       },
       center: function() {
         const selected = this.data.results[this.verticalNavIndex];
@@ -189,7 +227,6 @@ window.addEventListener("load", function() {
     verticalNavClass: '.homeNav',
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
-      navigator.spatialNavigationEnabled = false;
       this.$router.setHeaderTitle('YT Music');
     },
     unmounted: function() {

@@ -243,10 +243,12 @@ const Kai = (function() {
     this.templateCompiled = DOM.innerHTML;
     for(var i=0;i<DOM.getElementsByTagName('input').length;i++) {
       DOM.getElementsByTagName('input')[i].addEventListener('focus', (evt) => {
-        this.$router.onInputFocus();
+        if (this.$router)
+          this.$router.onInputFocus();
       });
       DOM.getElementsByTagName('input')[i].addEventListener('blur', (evt) => {
-        this.$router.onInputBlur();
+        if (this.$router)
+          this.$router.onInputFocus();
       });
     }
     if (document.activeElement.tagName === 'INPUT' && this.$router) {
