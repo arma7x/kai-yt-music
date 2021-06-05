@@ -143,7 +143,7 @@ function execute(id) {
   })
 }
 
-function getLinks(id) {
+function getVideoLinks(id) {
   return execute(id)
   .then((result) => {
     if (result.response) {

@@ -134,7 +134,7 @@ window.addEventListener("load", function() {
     methods: {
       selected: function(vid) {
         this.$router.showLoading();
-        getLinks(vid.id)
+        getVideoLinks(vid.id)
         .then((links) => {
           var audio = [];
           links.forEach((link) => {
@@ -238,11 +238,11 @@ window.addEventListener("load", function() {
       },
       search: function(q = '') {
         this.$router.showLoading();
-        xhr('GET', `https://youtube-scrape.herokuapp.com/api/search?q=${q}`)
+        searchVideo(q)
         .then((data) => {
           this.verticalNavIndex = -1;
           var videos = [];
-          data.response.results.forEach((t) => {
+          data.results.forEach((t) => {
             if (t.video) {
               t.video.isVideo = true;
               videos.push(t.video);
@@ -250,9 +250,9 @@ window.addEventListener("load", function() {
           });
           this.setData({
             results: [],
-            key: data.response.key,
-            estimatedResults: data.response.estimatedResults,
-            nextPageToken: data.response.nextPageToken || null,
+            key: data.key,
+            estimatedResults: data.estimatedResults,
+            nextPageToken: data.nextPageToken || null,
           });
           this.methods.processResult(videos);
         })
@@ -265,19 +265,19 @@ window.addEventListener("load", function() {
       },
       nextPage: function() {
         this.$router.showLoading();
-        xhr('GET', `https://youtube-scrape.herokuapp.com/api/search?pageToken=${this.data.nextPageToken}&key=${this.data.key}`)
+        searchVideo("", this.data.key, this.data.nextPageToken)
         .then((data) => {
           var videos = [];
-          data.response.results.forEach((t) => {
+          data.results.forEach((t) => {
             if (t.video) {
               t.video.isVideo = true;
               videos.push(t.video);
             }
           });
           this.setData({
-            key: data.response.key,
-            estimatedResults: data.response.estimatedResults,
-            nextPageToken: data.response.nextPageToken || null,
+            key: data.key,
+            estimatedResults: data.estimatedResults,
+            nextPageToken: data.nextPageToken || null,
           });
           this.methods.processResult(videos);
         })
