@@ -65,6 +65,7 @@ window.addEventListener("load", function() {
           PLAYER.mozAudioChannelType = 'content';
           PLAYER.src = obj.url;
           PLAYER.play();
+          this.methods.miniPlayer();
         } else {
           this.$router.showLoading();
           decryptSignature(obj.signatureCipher, obj.player)
@@ -73,6 +74,7 @@ window.addEventListener("load", function() {
             PLAYER.mozAudioChannelType = 'content';
             PLAYER.src = url;
             PLAYER.play();
+            this.methods.miniPlayer();
           })
           .catch((err) => {
             console.log(err);
@@ -81,6 +83,51 @@ window.addEventListener("load", function() {
             this.$router.hideLoading();
           });
         }
+      },
+      miniPlayer: function() {
+        const miniPlayerDialog = Kai.createDialog('Mini Player', '<div><input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
+        miniPlayerDialog.mounted = () => {
+          setTimeout(() => {
+            setTimeout(() => {
+              this.$router.setSoftKeyText('Exit' , 'PLAY', 'Pause');
+            }, 101);
+            const MINI_PLAYER = document.getElementById('miniplayer');
+            if (!MINI_PLAYER) {
+              return;
+            }
+            MINI_PLAYER.focus();
+            MINI_PLAYER.addEventListener('keydown', (evt) => {
+              switch (evt.key) {
+                case 'Backspace':
+                case 'EndCall':
+                  console.log('EXIT');
+                  PLAYER.pause();
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    MINI_PLAYER.blur();
+                  }, 100);
+                  break
+                case 'SoftRight':
+                  console.log('PAUSE');
+                  PLAYER.pause();
+                  break
+                case 'SoftLeft':
+                  console.log('EXIT 2');
+                  PLAYER.pause();
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    MINI_PLAYER.blur();
+                  }, 100);
+                  break
+                case 'Enter':
+                  console.log('PLAY');
+                  PLAYER.play();
+                  break
+              }
+            });
+          });
+        }
+        this.$router.showBottomSheet(miniPlayerDialog);
       },
       search: function(q = '') {
         this.$router.showLoading();
@@ -165,7 +212,7 @@ window.addEventListener("load", function() {
     softKeyText: { left: 'Search', center: '', right: '' },
     softKeyListener: {
       left: function() {
-        const urlDialog = Kai.createDialog('Search', '<div><input id="search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, 'Go', undefined, 'Cancel', undefined, undefined, this.$router);
+        const urlDialog = Kai.createDialog('Search', '<div><input id="search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
         urlDialog.mounted = () => {
           setTimeout(() => {
             setTimeout(() => {

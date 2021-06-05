@@ -338,6 +338,8 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
           const d = options[this.verticalNavIndex];
           if (d) {
             selectCb(d);
+          } else {
+            selectCb(this.verticalNavIndex);
           }
         }
         if (closeCb) {
@@ -473,7 +475,12 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
           $router.hideSingleSelector();
         }
         if (typeof selectCb === 'function') {
-          selectCb(data);
+          const d = options[this.verticalNavIndex];
+          if (d) {
+            selectCb(d);
+          } else {
+            selectCb(this.verticalNavIndex);
+          }
         }
         if (closeCb) {
           closeCb();
@@ -562,21 +569,28 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
     </div>',
     methods: {
       selectOption: function(data) {
-        data['checked'] = !data['checked'];
-        const idx = this.data.options.findIndex((opt) => {
-          return opt.text === data.text;
-        });
-        if (idx > -1) {
-          this.data.options[idx] = data;
-          if (data.checked) {
-            $router.setSoftKeyCenterText('DESELECT');
-          } else {
-            $router.setSoftKeyCenterText('SELECT');
+        const d = options[this.verticalNavIndex];
+        if (d) {
+          d['checked'] = !d['checked'];
+          const idx = this.data.options.findIndex((opt) => {
+            return opt.text === d.text;
+          });
+          if (idx > -1) {
+            this.data.options[idx] = d;
+            if (d.checked) {
+              $router.setSoftKeyCenterText('DESELECT');
+            } else {
+              $router.setSoftKeyCenterText('SELECT');
+            }
+            this.setData({ options: this.data.options });
           }
-          this.setData({ options: this.data.options });
         }
         if (typeof selectCb === 'function') {
-          selectCb(data);
+          if (d) {
+            selectCb(d);
+          } else {
+            selectCb(this.verticalNavIndex);
+          }
         }
         if (closeCb) {
           closeCb();
