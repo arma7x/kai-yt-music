@@ -85,7 +85,7 @@ window.addEventListener("load", function() {
         }
       },
       miniPlayer: function() {
-        const miniPlayerDialog = Kai.createDialog('Mini Player', '<div><input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
+        const miniPlayerDialog = Kai.createDialog('Mini Player', '<div>TODO<div><input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/></div></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
         miniPlayerDialog.mounted = () => {
           setTimeout(() => {
             setTimeout(() => {
@@ -104,6 +104,7 @@ window.addEventListener("load", function() {
                   PLAYER.pause();
                   this.$router.hideBottomSheet();
                   setTimeout(() => {
+                    this.methods.renderSoftKeyCR();
                     MINI_PLAYER.blur();
                   }, 100);
                   break
@@ -116,6 +117,7 @@ window.addEventListener("load", function() {
                   PLAYER.pause();
                   this.$router.hideBottomSheet();
                   setTimeout(() => {
+                    this.methods.renderSoftKeyCR();
                     MINI_PLAYER.blur();
                   }, 100);
                   break
@@ -230,6 +232,7 @@ window.addEventListener("load", function() {
                   if (document.activeElement.value.length === 0) {
                     this.$router.hideBottomSheet();
                     setTimeout(() => {
+                      this.methods.renderSoftKeyCR();
                       SEARCH_INPUT.blur();
                     }, 100);
                   }
@@ -237,6 +240,7 @@ window.addEventListener("load", function() {
                 case 'SoftRight':
                   this.$router.hideBottomSheet();
                   setTimeout(() => {
+                    this.methods.renderSoftKeyCR();
                     SEARCH_INPUT.blur();
                     this.methods.search(SEARCH_INPUT.value);
                   }, 100);
@@ -244,6 +248,7 @@ window.addEventListener("load", function() {
                 case 'SoftLeft':
                   this.$router.hideBottomSheet();
                   setTimeout(() => {
+                    this.methods.renderSoftKeyCR();
                     SEARCH_INPUT.blur();
                   }, 100);
                   break
