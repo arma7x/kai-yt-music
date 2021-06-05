@@ -1,3 +1,5 @@
+const DB_NAME = 'YT_MUSIC';
+
 if (navigator.mozAudioChannelManager) {
   navigator.mozAudioChannelManager.volumeControlChannel = 'content';
 }
@@ -7,7 +9,109 @@ PLAYER.volume = 1;
 
 window.addEventListener("load", function() {
 
+  localforage.setDriver(localforage.LOCALSTORAGE);
+
   const state = new KaiState({});
+
+  const saveVideoID = function ($router, video) {
+    localforage.getItem(DB_NAME)
+    .then((DATABASE) => {
+      if (DATABASE == null) {
+        DATABASE = {};
+      }
+      if (DATABASE[video.id]) {
+        $router.showToast('Already exist inside DB');
+      } else {
+        $router.push(
+          new Kai({
+            name: 'saveForm',
+            data: {
+              title: '',
+              artist: '',
+              album: '',
+              genre: '',
+              year: '',
+              track: '',
+            },
+            verticalNavClass: '.saveFormNav',
+            templateUrl: document.location.origin + '/templates/saveForm.html',
+            mounted: function() {
+              this.$router.setHeaderTitle(`Metadata #${video.id}`);
+            },
+            unmounted: function() {},
+            methods: {
+              submit: function() {
+                var obj = {
+                  id: video.id,
+                  _title: video.title,
+                  album_art: video.thumbnail_src,
+                  title: 'UNKNOWN',
+                  artist: 'UNKNOWN',
+                  album: 'UNKNOWN',
+                  genre: 'UNKNOWN',
+                  year: 0,
+                  track: 0,
+                };
+                if (document.getElementById('title').value.trim().length > 0) {
+                  obj.title = document.getElementById('title').value.trim();
+                }
+                if (document.getElementById('artist').value.trim().length > 0) {
+                  obj.artist = document.getElementById('artist').value.trim();
+                }
+                if (document.getElementById('album').value.trim().length > 0) {
+                  obj.album = document.getElementById('album').value.trim();
+                }
+                if (document.getElementById('genre').value.trim().length > 0) {
+                  obj.genre = document.getElementById('genre').value.trim();
+                }
+                if (document.getElementById('year').value.trim().length > 0) {
+                  try {
+                    obj.year = JSON.parse(document.getElementById('year').value.trim());
+                  } catch(e){}
+                }
+                if (document.getElementById('track').value.trim().length > 0) {
+                  try {
+                    obj.year = JSON.parse(document.getElementById('track').value.trim());
+                  } catch(e){}
+                }
+                DATABASE[video.id] = obj;
+                localforage.setItem(DB_NAME, DATABASE)
+                .then(() => {
+                  $router.showToast('Saved');
+                  $router.pop();
+                }).catch((err) => {
+                  $router.showToast(err.toString());
+                });
+              }
+            },
+            softKeyText: { left: '', center: '', right: '' },
+            softKeyListener: {
+              left: function() {},
+              center: function() {
+                const listNav = document.querySelectorAll(this.verticalNavClass);
+                if (this.verticalNavIndex > -1) {
+                  if (listNav[this.verticalNavIndex]) {
+                    listNav[this.verticalNavIndex].click();
+                  }
+                }
+              },
+              right: function() {}
+            },
+            dPadNavListener: {
+              arrowUp: function() {
+                this.navigateListNav(-1);
+              },
+              arrowDown: function() {
+                this.navigateListNav(1);
+              }
+            }
+          })
+        );
+      }
+    }).catch((err) => {
+      console.log(err);
+    });
+  }
 
   const search = new Kai({
     name: 'search',
@@ -22,6 +126,7 @@ window.addEventListener("load", function() {
     templateUrl: document.location.origin + '/templates/search.html',
     mounted: function() {
       this.$router.setHeaderTitle('Search');
+      this.methods.renderSoftKeyCR();
     },
     unmounted: function() {
       
@@ -267,7 +372,13 @@ window.addEventListener("load", function() {
             this.methods.nextPage();
         }
       },
-      right: function() {}
+      right: function() {
+        const selected = this.data.results[this.verticalNavIndex];
+        if (selected) {
+          if (selected.isVideo)
+            saveVideoID(this.$router, selected);
+        }
+      }
     },
     dPadNavListener: {
       arrowUp: function() {
