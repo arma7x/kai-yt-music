@@ -11,9 +11,20 @@ window.addEventListener("load", function() {
 
   localforage.setDriver(localforage.LOCALSTORAGE);
 
-  const state = new KaiState({});
+  const state = new KaiState({
+    DATABASE: {}
+  });
 
-  const saveVideoID = function ($router, video) {
+  localforage.getItem(DB_NAME)
+  .then((DATABASE) => {
+    if (DATABASE == null) {
+      DATABASE = {};
+    }
+    state.setState('DATABASE', DATABASE);
+    console.log(state.getState('DATABASE'));
+  });
+
+  const saveVideoID = function ($router, video, isUpdate = false) {
     localforage.getItem(DB_NAME)
     .then((DATABASE) => {
       if (DATABASE == null) {
@@ -79,7 +90,12 @@ window.addEventListener("load", function() {
                 .then(() => {
                   $router.showToast('Saved');
                   $router.pop();
-                }).catch((err) => {
+                  return localforage.getItem(DB_NAME);
+                })
+                .then((UPDATED_DATABASE) => {
+                  state.setState('DATABASE', UPDATED_DATABASE);
+                })
+                .catch((err) => {
                   $router.showToast(err.toString());
                 });
               }
@@ -234,6 +250,16 @@ window.addEventListener("load", function() {
             });
           });
         }
+        miniPlayerDialog.dPadNavListener = {
+          arrowUp: function() {
+            const MINI_PLAYER = document.getElementById('miniplayer');
+            MINI_PLAYER.focus();
+          },
+          arrowDown: function() {
+            const MINI_PLAYER = document.getElementById('miniplayer');
+            MINI_PLAYER.focus();
+          }
+        }
         this.$router.showBottomSheet(miniPlayerDialog);
       },
       search: function(q = '') {
@@ -361,6 +387,16 @@ window.addEventListener("load", function() {
             });
           });
         }
+        urlDialog.dPadNavListener = {
+          arrowUp: function() {
+            const SEARCH_INPUT = document.getElementById('search-input');
+            SEARCH_INPUT.focus();
+          },
+          arrowDown: function() {
+            const SEARCH_INPUT = document.getElementById('search-input');
+            SEARCH_INPUT.focus();
+          }
+        }
         this.$router.showBottomSheet(urlDialog);
       },
       center: function() {
@@ -418,14 +454,34 @@ window.addEventListener("load", function() {
     methods: {
       selected: function() {},
     },
-    softKeyText: { left: 'Menu', center: 'Search', right: 'Exit' },
+    softKeyText: { left: 'Track', center: '', right: 'Menu' },
     softKeyListener: {
-      left: function() {},
+      left: function() {
+        // TRACK
+      },
       center: function() {
-        this.$router.push('search');
+        
       },
       right: function() {
-        window.close();
+        const menus = [
+          { text: 'Database' },
+          { text: 'Search' },
+          { text: 'Playlist' },
+          { text: 'Artist' },
+          { text: 'Album' },
+          { text: 'Genre' },
+          { text: 'About' },
+          { text: 'Exit' }
+        ]
+        this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
+          if (selected.text === 'Exit') {
+            window.close();
+          } else if (selected.text === 'Search') {
+            this.$router.push('search');
+          } else {
+            console.log(selected.text);
+          }
+        }, undefined, 0);
       }
     },
     dPadNavListener: {
