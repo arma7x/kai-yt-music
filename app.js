@@ -21,12 +21,17 @@ window.addEventListener("load", function() {
       DATABASE = {};
     }
     state.setState('DATABASE', DATABASE);
-    // console.log(state.getState('DATABASE'));
   });
 
   
   const miniPlayer = function($router, cb = () => {}) {
-    const miniPlayerDialog = Kai.createDialog('Mini Player', '<div>TODO<div><input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/></div></div>', null, '', undefined, '', undefined, '', undefined, undefined, $router);
+    const miniPlayerDialog = Kai.createDialog('Mini Player', `
+      <div>
+        <div>
+          <input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/>
+        </div>
+      </div>`,
+    null, '', undefined, '', undefined, '', undefined, undefined, $router);
     miniPlayerDialog.mounted = () => {
       setTimeout(() => {
         setTimeout(() => {
@@ -577,7 +582,61 @@ window.addEventListener("load", function() {
     },
     softKeyText: { left: 'Search', center: '', right: '' },
     softKeyListener: {
-      left: function() {},
+      left: function() {
+        const urlDialog = Kai.createDialog('Search', '<div><input id="local-search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
+        urlDialog.mounted = () => {
+          setTimeout(() => {
+            setTimeout(() => {
+              this.$router.setSoftKeyText('Cancel' , '', 'Go');
+            }, 103);
+            const SEARCH_INPUT = document.getElementById('local-search-input');
+            if (!SEARCH_INPUT) {
+              return;
+            }
+            SEARCH_INPUT.focus();
+            SEARCH_INPUT.addEventListener('keydown', (evt) => {
+              switch (evt.key) {
+                case 'Backspace':
+                case 'EndCall':
+                  if (document.activeElement.value.length === 0) {
+                    this.$router.hideBottomSheet();
+                    setTimeout(() => {
+                      this.methods.renderSoftKeyLCR();
+                      SEARCH_INPUT.blur();
+                    }, 100);
+                  }
+                  break
+                case 'SoftRight':
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    this.methods.renderSoftKeyLCR();
+                    SEARCH_INPUT.blur();
+                    // this.methods.search(SEARCH_INPUT.value);
+                  }, 100);
+                  break
+                case 'SoftLeft':
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    this.methods.renderSoftKeyLCR();
+                    SEARCH_INPUT.blur();
+                  }, 100);
+                  break
+              }
+            });
+          });
+        }
+        urlDialog.dPadNavListener = {
+          arrowUp: function() {
+            const SEARCH_INPUT = document.getElementById('local-search-input');
+            SEARCH_INPUT.focus();
+          },
+          arrowDown: function() {
+            const SEARCH_INPUT = document.getElementById('local-search-input');
+            SEARCH_INPUT.focus();
+          }
+        }
+        this.$router.showBottomSheet(urlDialog);
+      },
       center: function() {
         const selected = this.data.results[this.verticalNavIndex];
         if (selected) {
@@ -596,6 +655,7 @@ window.addEventListener("load", function() {
             const menus = [
               { text: 'Update' },
               { text: 'Delete' },
+              { text: 'Playlist' },
             ]
             this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
               if (selected.text === 'Update') {
