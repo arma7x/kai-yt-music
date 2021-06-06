@@ -123,6 +123,63 @@ window.addEventListener("load", function() {
     $router.showBottomSheet(miniPlayerDialog);
   }
 
+  const addOrEditPlaylistDialog = function(_this, name = '', id = null) {
+    const playlistDialog = Kai.createDialog((id ? 'Edit' : 'Add') + ' Playlist', `<div><input id="playlist-name" placeholder="Enter playlist name" class="kui-input" type="text" value=""/></div>`, null, '', undefined, '', undefined, '', undefined, undefined, _this.$router);
+    playlistDialog.mounted = () => {
+      setTimeout(() => {
+        setTimeout(() => {
+          _this.$router.setSoftKeyText('Cancel' , '', 'Save');
+          INPUT.value = name;
+        }, 103);
+        const INPUT = document.getElementById('playlist-name');
+        if (!INPUT) {
+          return;
+        }
+        INPUT.focus();
+        INPUT.addEventListener('keydown', (evt) => {
+          switch (evt.key) {
+            case 'Backspace':
+            case 'EndCall':
+              if (document.activeElement.value.length === 0) {
+                _this.$router.hideBottomSheet();
+                setTimeout(() => {
+                  _this.methods.renderSoftKeyLCR();
+                  INPUT.blur();
+                }, 100);
+              }
+              break
+            case 'SoftRight':
+              _this.$router.hideBottomSheet();
+              setTimeout(() => {
+                _this.methods.renderSoftKeyLCR();
+                INPUT.blur();
+                _this.methods.addOrEditPlaylist(INPUT.value, id);
+              }, 100);
+              break
+            case 'SoftLeft':
+              _this.$router.hideBottomSheet();
+              setTimeout(() => {
+                _this.methods.renderSoftKeyLCR();
+                INPUT.blur();
+              }, 100);
+              break
+          }
+        });
+      });
+    }
+    playlistDialog.dPadNavListener = {
+      arrowUp: function() {
+        const INPUT = document.getElementById('playlist-name');
+        INPUT.focus();
+      },
+      arrowDown: function() {
+        const INPUT = document.getElementById('playlist-name');
+        INPUT.focus();
+      }
+    }
+    _this.$router.showBottomSheet(playlistDialog);
+  }
+
   const playlist = new Kai({
     name: '_playlist_',
     data: {
@@ -155,7 +212,8 @@ window.addEventListener("load", function() {
         this.setData({ playlists: playlists });
         this.methods.renderSoftKeyLCR();
       },
-      createPlaylist: function(name = '') {
+      addOrEditPlaylist: function(name = '', id = null) {
+        var oldName = '';
         name = name.trim();
         if (name.length === 0) {
           this.$router.showToast('Playlist name is required');
@@ -165,16 +223,25 @@ window.addEventListener("load", function() {
             if (PLAYLIST == null) {
               PLAYLIST = {};
             }
-            const id = new Date().getTime();
-            const obj = { id: id, name: name, collections: [] };
-            PLAYLIST[id] = obj;
+            const pid = id || new Date().getTime();
+            if (PLAYLIST[pid]) {
+              oldName = PLAYLIST[pid].name;
+              PLAYLIST[pid].name = name;
+            } else {
+              const obj = { id: pid, name: name, collections: [] };
+              PLAYLIST[pid] = obj;
+            }
             localforage.setItem(DB_PLAYLIST, PLAYLIST);
           })
           .then(() => {
             return localforage.getItem(DB_PLAYLIST);
           })
           .then((UPDATED_PLAYLIST) => {
-            this.$router.showToast(`${name} added to Playlist`);
+            var msg = `${name} added to Playlist`;
+            if (id) {
+              msg = `${oldName} updated to ${name}`;
+            }
+            this.$router.showToast(msg);
             state.setState('PLAYLIST', UPDATED_PLAYLIST);
             this.methods.getPlaylist();
           })
@@ -187,59 +254,7 @@ window.addEventListener("load", function() {
     softKeyText: { left: 'Add', center: '', right: '' },
     softKeyListener: {
       left: function() {
-        const playlistDialog = Kai.createDialog('Add Playlist', '<div><input id="playlist-name" placeholder="Enter playlist name" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
-        playlistDialog.mounted = () => {
-          setTimeout(() => {
-            setTimeout(() => {
-              this.$router.setSoftKeyText('Cancel' , '', 'Save');
-            }, 103);
-            const INPUT = document.getElementById('playlist-name');
-            if (!INPUT) {
-              return;
-            }
-            INPUT.focus();
-            INPUT.addEventListener('keydown', (evt) => {
-              switch (evt.key) {
-                case 'Backspace':
-                case 'EndCall':
-                  if (document.activeElement.value.length === 0) {
-                    this.$router.hideBottomSheet();
-                    setTimeout(() => {
-                      this.methods.renderSoftKeyLCR();
-                      INPUT.blur();
-                    }, 100);
-                  }
-                  break
-                case 'SoftRight':
-                  this.$router.hideBottomSheet();
-                  setTimeout(() => {
-                    this.methods.renderSoftKeyLCR();
-                    INPUT.blur();
-                    this.methods.createPlaylist(INPUT.value);
-                  }, 100);
-                  break
-                case 'SoftLeft':
-                  this.$router.hideBottomSheet();
-                  setTimeout(() => {
-                    this.methods.renderSoftKeyLCR();
-                    INPUT.blur();
-                  }, 100);
-                  break
-              }
-            });
-          });
-        }
-        playlistDialog.dPadNavListener = {
-          arrowUp: function() {
-            const INPUT = document.getElementById('playlist-name');
-            INPUT.focus();
-          },
-          arrowDown: function() {
-            const INPUT = document.getElementById('playlist-name');
-            INPUT.focus();
-          }
-        }
-        this.$router.showBottomSheet(playlistDialog);
+        addOrEditPlaylistDialog(this, '', null);
       },
       center: function() {},
       right: function() {
@@ -252,7 +267,7 @@ window.addEventListener("load", function() {
           ]
           this.$router.showOptionMenu('Action', menus, 'Select', (selected) => {
             if (selected.text === 'Update') {
-              
+              addOrEditPlaylistDialog(this, _selected.name, _selected.id);
             } else {
               console.log(selected.text);
             }
