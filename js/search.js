@@ -28,6 +28,27 @@ function parseJsonFormat(contents, json) {
                     }
                 });
             }
+            else if (sectionList.hasOwnProperty("richItemRenderer")) {
+                try {
+                    const content = sectionList.richItemRenderer.content;
+                    if (content.hasOwnProperty("channelRenderer")) {
+                        json.results.push(parseChannelRenderer(content.channelRenderer));
+                    }
+                    if (content.hasOwnProperty("videoRenderer")) {
+                        json.results.push(parseVideoRenderer(content.videoRenderer));
+                    }
+                    if (content.hasOwnProperty("radioRenderer")) {
+                        json.results.push(parseRadioRenderer(content.radioRenderer));
+                    }
+                    if (content.hasOwnProperty("playlistRenderer")) {
+                        json.results.push(parsePlaylistRenderer(content.playlistRenderer));
+                    }
+                }
+                catch(ex) {
+                    console.error("Failed to parse renderer:", ex);
+                    console.log(content);
+                }
+            }
             else if (sectionList.hasOwnProperty("continuationItemRenderer")) {
                 json["nextPageToken"] = sectionList.continuationItemRenderer.continuationEndpoint.continuationCommand.token;
             }
@@ -148,7 +169,7 @@ function comb(a, b) {
     return a + b.text;
 }
 
-function searchVideo(query, key, pageToken) {
+function searchVideo(query = '', key, pageToken) {
   var json = { results: [] };
   return new Promise((resolve, reject) => {
     if (key) {
@@ -172,7 +193,11 @@ function searchVideo(query, key, pageToken) {
         reject(e);
       })
     } else {
-      xhr('GET', `https://www.youtube.com/results?q=${encodeURIComponent(query)}`, {}, {}, XHR_HEADER)
+      var URL = `https://www.youtube.com/`;
+      if (query.trim().length > 0) {
+        URL = `https://www.youtube.com/results?q=${encodeURIComponent(query)}`;
+      }
+      xhr('GET', URL, {}, {}, XHR_HEADER)
       .then((data) => {
         json["parser"] = "json_format";
         json["key"] = data.response.match(/"innertubeApiKey":"([^"]*)/)[1];
@@ -182,8 +207,15 @@ function searchVideo(query, key, pageToken) {
           const objStr = s.substring(0, s.indexOf(`;</script>`));
           data = JSON.parse(objStr);
           json["estimatedResults"] = data.estimatedResults || "0";
-          sectionLists = data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents;
-          parseJsonFormat(sectionLists, json);
+          if (data.contents.twoColumnSearchResultsRenderer) {
+            json["parser"] += ".object_var";
+            sectionLists = data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents;
+            parseJsonFormat(sectionLists, json);
+          } else if (data.contents.twoColumnBrowseResultsRenderer) {
+            json["parser"] += ".original";
+            sectionLists = data.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.richGridRenderer.contents;
+            parseJsonFormat(sectionLists, json);
+          }
           resolve(json);
         }
       })
