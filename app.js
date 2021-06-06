@@ -455,21 +455,14 @@ window.addEventListener("load", function() {
       title: 'database',
       bulk_results: [],
       results: [],
-      perPage: 1,
+      perPage: 10,
       nextPage: null
     },
     verticalNavClass: '.searchNav',
     templateUrl: document.location.origin + '/templates/search.html',
     mounted: function() {
       this.$router.setHeaderTitle('Database');
-      const src = this.$state.getState('DATABASE');
-      const bulk_results = [];
-      for (var x in src) {
-        src[x].isVideo = true
-        bulk_results.push(src[x]);
-      }
-      this.data.bulk_results = bulk_results;
-      this.methods.processResult(0);
+      this.methods.resetSearch();
     },
     unmounted: function() {
       this.data.title = 'database';
@@ -540,6 +533,44 @@ window.addEventListener("load", function() {
           });
         }
       },
+      resetSearch: function() {
+        const src = this.$state.getState('DATABASE');
+        const bulk_results = [];
+        for (var x in src) {
+          src[x].isVideo = true
+          bulk_results.push(src[x]);
+        }
+        this.data.results = [];
+        this.data.bulk_results = bulk_results;
+        this.methods.processResult(0);
+      },
+      search: function(keyword = '') {
+        keyword = keyword.trim();
+        if (keyword.length === 0) {
+          this.methods.resetSearch();
+        } else {
+          const src = this.$state.getState('DATABASE');
+          const bulk_results = [];
+          for (var x in src) {
+            src[x].isVideo = true;
+            if (src[x]._title.toLowerCase().indexOf(keyword.toLowerCase()) > -1) {
+              bulk_results.push(src[x]);
+            } else {
+              const fields = ['title', 'artist', 'album', 'genre', 'year'];
+              for (var v in fields) {
+                if (src[x][fields[v]] && src[x][fields[v]].toString().toLowerCase().indexOf(keyword.toLowerCase()) > -1) {
+                  bulk_results.push(src[x]);
+                  break
+                }
+              }
+            }
+          }
+          this.verticalNavIndex = -1;
+          this.data.results = [];
+          this.data.bulk_results = bulk_results;
+          this.methods.processResult(0);
+        }
+      },
       processResult: function(page = 0) {
         if (this.data.bulk_results.length == 0)
           return
@@ -558,7 +589,6 @@ window.addEventListener("load", function() {
           next = page + 1;
         }
         this.data.nextPage = next;
-        //console.log(start, end, next, totalPages);
         const merged = [...this.data.results, ...this.data.bulk_results.slice(start, end)];
         if (this.data.nextPage) {
           merged.push({ isVideo: false });
@@ -611,7 +641,7 @@ window.addEventListener("load", function() {
                   setTimeout(() => {
                     this.methods.renderSoftKeyLCR();
                     SEARCH_INPUT.blur();
-                    // this.methods.search(SEARCH_INPUT.value);
+                    this.methods.search(SEARCH_INPUT.value);
                   }, 100);
                   break
                 case 'SoftLeft':
