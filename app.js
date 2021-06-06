@@ -21,8 +21,67 @@ window.addEventListener("load", function() {
       DATABASE = {};
     }
     state.setState('DATABASE', DATABASE);
-    console.log(state.getState('DATABASE'));
+    // console.log(state.getState('DATABASE'));
   });
+
+  
+  const miniPlayer = function($router, cb = () => {}) {
+    const miniPlayerDialog = Kai.createDialog('Mini Player', '<div>TODO<div><input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/></div></div>', null, '', undefined, '', undefined, '', undefined, undefined, $router);
+    miniPlayerDialog.mounted = () => {
+      setTimeout(() => {
+        setTimeout(() => {
+          $router.setSoftKeyText('Exit' , 'PLAY', 'Pause');
+        }, 101);
+        const MINI_PLAYER = document.getElementById('miniplayer');
+        if (!MINI_PLAYER) {
+          return;
+        }
+        MINI_PLAYER.focus();
+        MINI_PLAYER.addEventListener('keydown', (evt) => {
+          switch (evt.key) {
+            case 'Backspace':
+            case 'EndCall':
+              console.log('EXIT');
+              PLAYER.pause();
+              $router.hideBottomSheet();
+              setTimeout(() => {
+                cb();
+                MINI_PLAYER.blur();
+              }, 100);
+              break
+            case 'SoftRight':
+              console.log('PAUSE');
+              PLAYER.pause();
+              break
+            case 'SoftLeft':
+              console.log('EXIT 2');
+              PLAYER.pause();
+              $router.hideBottomSheet();
+              setTimeout(() => {
+                cb();
+                MINI_PLAYER.blur();
+              }, 100);
+              break
+            case 'Enter':
+              console.log('PLAY');
+              PLAYER.play();
+              break
+          }
+        });
+      });
+    }
+    miniPlayerDialog.dPadNavListener = {
+      arrowUp: function() {
+        const MINI_PLAYER = document.getElementById('miniplayer');
+        MINI_PLAYER.focus();
+      },
+      arrowDown: function() {
+        const MINI_PLAYER = document.getElementById('miniplayer');
+        MINI_PLAYER.focus();
+      }
+    }
+    $router.showBottomSheet(miniPlayerDialog);
+  }
 
   const saveVideoID = function ($router, video, isUpdate = false) {
     localforage.getItem(DB_NAME)
@@ -30,7 +89,7 @@ window.addEventListener("load", function() {
       if (DATABASE == null) {
         DATABASE = {};
       }
-      if (DATABASE[video.id]) {
+      if (DATABASE[video.id] && !isUpdate) {
         $router.showToast('Already exist inside DB');
       } else {
         $router.push(
@@ -56,12 +115,13 @@ window.addEventListener("load", function() {
                   id: video.id,
                   _title: video.title,
                   album_art: video.thumbnail_src,
-                  title: 'UNKNOWN',
-                  artist: 'UNKNOWN',
-                  album: 'UNKNOWN',
-                  genre: 'UNKNOWN',
-                  year: 0,
-                  track: 0,
+                  duration: video.duration,
+                  title: false,
+                  artist: false,
+                  album: false,
+                  genre: false,
+                  year: false,
+                  track: false,
                 };
                 if (document.getElementById('title').value.trim().length > 0) {
                   obj.title = document.getElementById('title').value.trim();
@@ -178,7 +238,11 @@ window.addEventListener("load", function() {
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
           this.methods.playAudio(selected);
-        }, () => {}, 0);
+        }, () => {
+          setTimeout(() => {
+            this.methods.renderSoftKeyCR();
+          }, 100);
+        }, 0);
       },
       playAudio: function(obj) {
         if (obj.url != null) {
@@ -186,7 +250,7 @@ window.addEventListener("load", function() {
           PLAYER.mozAudioChannelType = 'content';
           PLAYER.src = obj.url;
           PLAYER.play();
-          this.methods.miniPlayer();
+          miniPlayer(this.$router, this.methods.renderSoftKeyCR);
         } else {
           this.$router.showLoading();
           decryptSignature(obj.signatureCipher, obj.player)
@@ -195,7 +259,7 @@ window.addEventListener("load", function() {
             PLAYER.mozAudioChannelType = 'content';
             PLAYER.src = url;
             PLAYER.play();
-            this.methods.miniPlayer();
+            miniPlayer(this.$router, this.methods.renderSoftKeyCR);
           })
           .catch((err) => {
             console.log(err);
@@ -204,63 +268,6 @@ window.addEventListener("load", function() {
             this.$router.hideLoading();
           });
         }
-      },
-      miniPlayer: function() {
-        const miniPlayerDialog = Kai.createDialog('Mini Player', '<div>TODO<div><input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/></div></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
-        miniPlayerDialog.mounted = () => {
-          setTimeout(() => {
-            setTimeout(() => {
-              this.$router.setSoftKeyText('Exit' , 'PLAY', 'Pause');
-            }, 101);
-            const MINI_PLAYER = document.getElementById('miniplayer');
-            if (!MINI_PLAYER) {
-              return;
-            }
-            MINI_PLAYER.focus();
-            MINI_PLAYER.addEventListener('keydown', (evt) => {
-              switch (evt.key) {
-                case 'Backspace':
-                case 'EndCall':
-                  console.log('EXIT');
-                  PLAYER.pause();
-                  this.$router.hideBottomSheet();
-                  setTimeout(() => {
-                    this.methods.renderSoftKeyCR();
-                    MINI_PLAYER.blur();
-                  }, 100);
-                  break
-                case 'SoftRight':
-                  console.log('PAUSE');
-                  PLAYER.pause();
-                  break
-                case 'SoftLeft':
-                  console.log('EXIT 2');
-                  PLAYER.pause();
-                  this.$router.hideBottomSheet();
-                  setTimeout(() => {
-                    this.methods.renderSoftKeyCR();
-                    MINI_PLAYER.blur();
-                  }, 100);
-                  break
-                case 'Enter':
-                  console.log('PLAY');
-                  PLAYER.play();
-                  break
-              }
-            });
-          });
-        }
-        miniPlayerDialog.dPadNavListener = {
-          arrowUp: function() {
-            const MINI_PLAYER = document.getElementById('miniplayer');
-            MINI_PLAYER.focus();
-          },
-          arrowDown: function() {
-            const MINI_PLAYER = document.getElementById('miniplayer');
-            MINI_PLAYER.focus();
-          }
-        }
-        this.$router.showBottomSheet(miniPlayerDialog);
       },
       search: function(q = '') {
         this.$router.showLoading();
@@ -437,6 +444,165 @@ window.addEventListener("load", function() {
     }
   });
 
+  const database = new Kai({
+    name: 'database',
+    data: {
+      title: 'database',
+      bulk_results: [],
+      results: [],
+      perPage: 1,
+      nextPage: null
+    },
+    verticalNavClass: '.searchNav',
+    templateUrl: document.location.origin + '/templates/search.html',
+    mounted: function() {
+      this.$router.setHeaderTitle('Database');
+      const src = this.$state.getState('DATABASE');
+      const bulk_results = [];
+      for (var x in src) {
+        src[x].isVideo = true
+        bulk_results.push(src[x]);
+      }
+      this.data.bulk_results = bulk_results;
+      this.methods.processResult(0);
+    },
+    unmounted: function() {},
+    methods: {
+      selected: function(vid) {
+        this.$router.showLoading();
+        getVideoLinks(vid.id)
+        .then((links) => {
+          var audio = [];
+          links.forEach((link) => {
+            if (link.mimeType.indexOf('audio') > -1) {
+              var br = parseInt(link.bitrate);
+              if (br > 999) {
+                br = Math.round(br/1000);
+              }
+              link.text = link.mimeType + '(' + br.toString() + 'kbps)';
+              audio.push(link);
+            }
+          });
+          console.log(audio);
+          if (audio.length > 0) {
+            this.methods.showPlayOption(audio);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          this.$router.hideLoading();
+        });
+      },
+      showPlayOption: function(formats) {
+        this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
+          this.methods.playAudio(selected);
+        }, () => {
+          setTimeout(() => {
+            this.methods.renderSoftKeyLCR();
+          }, 100);
+        }, 0);
+      },
+      playAudio: function(obj) {
+        if (obj.url != null) {
+          console.log(obj.url);
+          PLAYER.mozAudioChannelType = 'content';
+          PLAYER.src = obj.url;
+          PLAYER.play();
+          miniPlayer(this.$router, this.methods.renderSoftKeyLCR);
+        } else {
+          this.$router.showLoading();
+          decryptSignature(obj.signatureCipher, obj.player)
+          .then((url) => {
+            console.log(url);
+            PLAYER.mozAudioChannelType = 'content';
+            PLAYER.src = url;
+            PLAYER.play();
+            miniPlayer(this.$router, this.methods.renderSoftKeyLCR);
+          })
+          .catch((err) => {
+            console.log(err);
+          })
+          .finally(() => {
+            this.$router.hideLoading();
+          });
+        }
+      },
+      processResult: function(page = 0) {
+        if (this.data.bulk_results.length == 0)
+          return
+        const last = this.data.results[this.data.results.length - 1];
+        if (last && !last.isVideo) {
+          this.data.results.pop();
+        }
+        var totalPages = Math.floor(this.data.bulk_results.length / this.data.perPage);
+        if ((this.data.bulk_results.length % this.data.perPage) > 0) {
+          totalPages++;
+        }
+        var next = null;
+        var start = page * this.data.perPage;
+        var end = start + this.data.perPage;
+        if (page < (totalPages - 1)) {
+          next = page + 1;
+        }
+        this.data.nextPage = next;
+        //console.log(start, end, next, totalPages);
+        const merged = [...this.data.results, ...this.data.bulk_results.slice(start, end)];
+        if (this.data.nextPage) {
+          merged.push({ isVideo: false });
+        }
+        this.setData({ results: merged });
+        this.methods.renderSoftKeyLCR();
+      },
+      renderSoftKeyLCR: function() {
+        this.$router.setSoftKeyText('Search', '', '');
+        if (this.verticalNavIndex > -1) {
+          const selected = this.data.results[this.verticalNavIndex];
+          if (selected) {
+            if (selected.isVideo) {
+              this.$router.setSoftKeyText('Search', 'PLAY', 'Action');
+            } else {
+              this.$router.setSoftKeyText('Search', 'SELECT', '');
+            }
+          }
+        }
+      }
+    },
+    softKeyText: { left: 'Search', center: '', right: '' },
+    softKeyListener: {
+      left: function() {},
+      center: function() {
+        const selected = this.data.results[this.verticalNavIndex];
+        if (selected) {
+          if (selected.isVideo)
+            this.methods.selected(selected);
+          else {
+            if (this.data.nextPage != null)
+            this.methods.processResult(this.data.nextPage);
+          }
+        }
+      },
+      right: function() {}
+    },
+    dPadNavListener: {
+      arrowUp: function() {
+        if (this.verticalNavIndex <= 0) {
+          return
+        }
+        this.navigateListNav(-1);
+        this.methods.renderSoftKeyLCR();
+      },
+      arrowDown: function() {
+        if (this.verticalNavIndex === this.data.results.length - 1) {
+          return
+        }
+        this.navigateListNav(1);
+        this.methods.renderSoftKeyLCR();
+      }
+    },
+  });
+
   const home = new Kai({
     name: 'home',
     data: {
@@ -464,8 +630,8 @@ window.addEventListener("load", function() {
       },
       right: function() {
         const menus = [
-          { text: 'Database' },
           { text: 'Search' },
+          { text: 'Database' },
           { text: 'Playlist' },
           { text: 'Artist' },
           { text: 'Album' },
@@ -474,10 +640,12 @@ window.addEventListener("load", function() {
           { text: 'Exit' }
         ]
         this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
-          if (selected.text === 'Exit') {
-            window.close();
-          } else if (selected.text === 'Search') {
+          if (selected.text === 'Search') {
             this.$router.push('search');
+          } else if (selected.text === 'Database') {
+            this.$router.push('database');
+          } else if (selected.text === 'Exit') {
+            window.close();
           } else {
             console.log(selected.text);
           }
@@ -513,6 +681,10 @@ window.addEventListener("load", function() {
       'search' : {
         name: 'search',
         component: search
+      },
+      'database' : {
+        name: 'database',
+        component: database
       },
     }
   });
