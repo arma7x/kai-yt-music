@@ -1,4 +1,5 @@
 const DB_NAME = 'YT_MUSIC';
+const DB_PLAYLIST = 'YT_PLAYLIST';
 
 if (navigator.mozAudioChannelManager) {
   navigator.mozAudioChannelManager.volumeControlChannel = 'content';
@@ -12,7 +13,8 @@ window.addEventListener("load", function() {
   localforage.setDriver(localforage.LOCALSTORAGE);
 
   const state = new KaiState({
-    DATABASE: {}
+    DATABASE: {},
+    PLAYLIST: {}
   });
 
   localforage.getItem(DB_NAME)
@@ -23,7 +25,40 @@ window.addEventListener("load", function() {
     state.setState('DATABASE', DATABASE);
   });
 
-  
+  localforage.getItem(DB_PLAYLIST)
+  .then((PLAYLIST) => {
+    if (PLAYLIST == null) {
+      PLAYLIST = {};
+    }
+    state.setState('PLAYLIST', PLAYLIST);
+  });
+
+  const dummy = new Kai({
+    name: '_dummy_',
+    data: {
+      title: '_dummy_'
+    },
+    verticalNavClass: '.dummyNav',
+    templateUrl: document.location.origin + '/templates/dummy.html',
+    mounted: function() {},
+    unmounted: function() {},
+    methods: {},
+    softKeyText: { left: 'L2', center: 'C2', right: 'R2' },
+    softKeyListener: {
+      left: function() {},
+      center: function() {},
+      right: function() {}
+    },
+    dPadNavListener: {
+      arrowUp: function() {
+        this.navigateListNav(-1);
+      },
+      arrowDown: function() {
+        this.navigateListNav(1);
+      }
+    }
+  });
+
   const miniPlayer = function($router, cb = () => {}) {
     const miniPlayerDialog = Kai.createDialog('Mini Player', `
       <div>
@@ -88,6 +123,165 @@ window.addEventListener("load", function() {
     $router.showBottomSheet(miniPlayerDialog);
   }
 
+  const playlist = new Kai({
+    name: '_playlist_',
+    data: {
+      title: '_playlist_',
+      playlists: [],
+    },
+    verticalNavClass: '.playlistNav',
+    templateUrl: document.location.origin + '/templates/playlist.html',
+    mounted: function() {
+      this.$router.setHeaderTitle('Playlist');
+      this.methods.getPlaylist();
+    },
+    unmounted: function() {},
+    methods: {
+      renderSoftKeyLCR: function() {
+        this.$router.setSoftKeyText('Add', '', '');
+        if (this.verticalNavIndex > -1) {
+          const selected = this.data.playlists[this.verticalNavIndex];
+          if (selected) {
+            this.$router.setSoftKeyText('Add', 'PLAY', 'Action');
+          }
+        }
+      },
+      getPlaylist: function() {
+        var playlists = [];
+        const src = this.$state.getState('PLAYLIST');
+        for (var y in src) {
+          playlists.push(src[y]);
+        }
+        this.setData({ playlists: playlists });
+        this.methods.renderSoftKeyLCR();
+      },
+      createPlaylist: function(name = '') {
+        name = name.trim();
+        if (name.length === 0) {
+          this.$router.showToast('Playlist name is required');
+        } else {
+          localforage.getItem(DB_PLAYLIST)
+          .then((PLAYLIST) => {
+            if (PLAYLIST == null) {
+              PLAYLIST = {};
+            }
+            const id = new Date().getTime();
+            const obj = { id: id, name: name, collections: [] };
+            PLAYLIST[id] = obj;
+            localforage.setItem(DB_PLAYLIST, PLAYLIST);
+          })
+          .then(() => {
+            return localforage.getItem(DB_PLAYLIST);
+          })
+          .then((UPDATED_PLAYLIST) => {
+            this.$router.showToast(`${name} added to Playlist`);
+            state.setState('PLAYLIST', UPDATED_PLAYLIST);
+            this.methods.getPlaylist();
+          })
+          .catch((e) => {
+            this.$router.showToast(e.toString());
+          });
+        }
+      }
+    },
+    softKeyText: { left: 'Add', center: '', right: '' },
+    softKeyListener: {
+      left: function() {
+        const playlistDialog = Kai.createDialog('Add Playlist', '<div><input id="playlist-name" placeholder="Enter playlist name" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
+        playlistDialog.mounted = () => {
+          setTimeout(() => {
+            setTimeout(() => {
+              this.$router.setSoftKeyText('Cancel' , '', 'Save');
+            }, 103);
+            const INPUT = document.getElementById('playlist-name');
+            if (!INPUT) {
+              return;
+            }
+            INPUT.focus();
+            INPUT.addEventListener('keydown', (evt) => {
+              switch (evt.key) {
+                case 'Backspace':
+                case 'EndCall':
+                  if (document.activeElement.value.length === 0) {
+                    this.$router.hideBottomSheet();
+                    setTimeout(() => {
+                      this.methods.renderSoftKeyLCR();
+                      INPUT.blur();
+                    }, 100);
+                  }
+                  break
+                case 'SoftRight':
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    this.methods.renderSoftKeyLCR();
+                    INPUT.blur();
+                    this.methods.createPlaylist(INPUT.value);
+                  }, 100);
+                  break
+                case 'SoftLeft':
+                  this.$router.hideBottomSheet();
+                  setTimeout(() => {
+                    this.methods.renderSoftKeyLCR();
+                    INPUT.blur();
+                  }, 100);
+                  break
+              }
+            });
+          });
+        }
+        playlistDialog.dPadNavListener = {
+          arrowUp: function() {
+            const INPUT = document.getElementById('playlist-name');
+            INPUT.focus();
+          },
+          arrowDown: function() {
+            const INPUT = document.getElementById('playlist-name');
+            INPUT.focus();
+          }
+        }
+        this.$router.showBottomSheet(playlistDialog);
+      },
+      center: function() {},
+      right: function() {
+        const _selected = this.data.playlists[this.verticalNavIndex];
+        if (_selected) {
+          const menus = [
+            { text: 'Track' },
+            { text: 'Update' },
+            { text: 'Delete' },
+          ]
+          this.$router.showOptionMenu('Action', menus, 'Select', (selected) => {
+            if (selected.text === 'Update') {
+              
+            } else {
+              console.log(selected.text);
+            }
+          }, () => {
+            setTimeout(() => {
+              this.methods.renderSoftKeyLCR();
+            }, 100);
+          }, 0);
+        }
+      }
+    },
+    dPadNavListener: {
+      arrowUp: function() {
+        if (this.verticalNavIndex <= 0) {
+          return
+        }
+        this.navigateListNav(-1);
+        this.methods.renderSoftKeyLCR();
+      },
+      arrowDown: function() {
+        if (this.verticalNavIndex === this.data.playlists.length - 1) {
+          return
+        }
+        this.navigateListNav(1);
+        this.methods.renderSoftKeyLCR();
+      }
+    },
+  });
+
   const saveVideoID = function ($router, video, isUpdate = false) {
     localforage.getItem(DB_NAME)
     .then((DATABASE) => {
@@ -99,7 +293,7 @@ window.addEventListener("load", function() {
       } else {
         $router.push(
           new Kai({
-            name: 'saveForm',
+            name: 'saveVideo',
             data: {
               title: isUpdate ? (video.title || '') : '',
               artist: isUpdate ? (video.artist || '') : '',
@@ -108,8 +302,8 @@ window.addEventListener("load", function() {
               year: isUpdate ? (video.year || '') : '',
               track: isUpdate ? (video.track || '') : '',
             },
-            verticalNavClass: '.saveFormNav',
-            templateUrl: document.location.origin + '/templates/saveForm.html',
+            verticalNavClass: '.saveVideoNav',
+            templateUrl: document.location.origin + '/templates/saveVideo.html',
             mounted: function() {
               this.$router.setHeaderTitle(`Metadata #${video.id}`);
             },
@@ -357,8 +551,8 @@ window.addEventListener("load", function() {
     softKeyText: { left: 'Search', center: '', right: '' },
     softKeyListener: {
       left: function() {
-        const urlDialog = Kai.createDialog('Search', '<div><input id="search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
-        urlDialog.mounted = () => {
+        const searchDialog = Kai.createDialog('Search', '<div><input id="search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
+        searchDialog.mounted = () => {
           setTimeout(() => {
             setTimeout(() => {
               this.$router.setSoftKeyText('Cancel' , '', 'Go');
@@ -399,7 +593,7 @@ window.addEventListener("load", function() {
             });
           });
         }
-        urlDialog.dPadNavListener = {
+        searchDialog.dPadNavListener = {
           arrowUp: function() {
             const SEARCH_INPUT = document.getElementById('search-input');
             SEARCH_INPUT.focus();
@@ -409,7 +603,7 @@ window.addEventListener("load", function() {
             SEARCH_INPUT.focus();
           }
         }
-        this.$router.showBottomSheet(urlDialog);
+        this.$router.showBottomSheet(searchDialog);
       },
       center: function() {
         const selected = this.data.results[this.verticalNavIndex];
@@ -613,8 +807,8 @@ window.addEventListener("load", function() {
     softKeyText: { left: 'Search', center: '', right: '' },
     softKeyListener: {
       left: function() {
-        const urlDialog = Kai.createDialog('Search', '<div><input id="local-search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
-        urlDialog.mounted = () => {
+        const searchDialog = Kai.createDialog('Search', '<div><input id="local-search-input" placeholder="Enter your keyword" class="kui-input" type="text" /></div>', null, '', undefined, '', undefined, '', undefined, undefined, this.$router);
+        searchDialog.mounted = () => {
           setTimeout(() => {
             setTimeout(() => {
               this.$router.setSoftKeyText('Cancel' , '', 'Go');
@@ -655,7 +849,7 @@ window.addEventListener("load", function() {
             });
           });
         }
-        urlDialog.dPadNavListener = {
+        searchDialog.dPadNavListener = {
           arrowUp: function() {
             const SEARCH_INPUT = document.getElementById('local-search-input');
             SEARCH_INPUT.focus();
@@ -665,7 +859,7 @@ window.addEventListener("load", function() {
             SEARCH_INPUT.focus();
           }
         }
-        this.$router.showBottomSheet(urlDialog);
+        this.$router.showBottomSheet(searchDialog);
       },
       center: function() {
         const selected = this.data.results[this.verticalNavIndex];
@@ -761,6 +955,8 @@ window.addEventListener("load", function() {
             this.$router.push('search');
           } else if (selected.text === 'Database') {
             this.$router.push('database');
+          } else if (selected.text === 'Playlist') {
+            this.$router.push('playlist');
           } else if (selected.text === 'Exit') {
             window.close();
           } else {
@@ -791,17 +987,21 @@ window.addEventListener("load", function() {
   const router = new KaiRouter({
     title: 'KaiKit',
     routes: {
-      'index' : {
+      'index': {
         name: 'home',
         component: home
       },
-      'search' : {
+      'search': {
         name: 'search',
         component: search
       },
-      'database' : {
+      'database': {
         name: 'database',
         component: database
+      },
+      'playlist': {
+        name: 'playlist',
+        component: playlist
       },
     }
   });
