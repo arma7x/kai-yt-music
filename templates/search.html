@@ -59,10 +59,10 @@
         <li class="searchNav li-style">
           <div class="wrapper">
             <div class="wrapper-album">
-              <img src="https://i.ytimg.com/vi/{{ id }}/default.jpg" class="wrapper-album-img" width="50px" height="50px"/>
+              <img src="https://i.ytimg.com/vi/{{ id }}/hqdefault.jpg" class="wrapper-album-img" width="50px" height="50px"/>
             </div>
             <div class="wrapper-info">
-              <pre class="wrapper-info-child">{{ title }}</pre>
+              <pre class="wrapper-info-child">{{#title}}{{ title }}{{/title}}{{^title}}{{ _title }}{{/title}}</pre>
               <pre class="wrapper-info-child">Duration: {{ duration }}</pre>
             </div>
           </div>

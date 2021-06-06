@@ -3,9 +3,9 @@
   "name": "YT Music",
   "description": "JS framework for KaiOS",
   "launch_path": "/index.html",
-  "theme": "#000000",
-  "theme_color": "#000000",
-  "background_color": "#000000",
+  "theme": "#FF0000",
+  "theme_color": "#FF0000",
+  "background_color": "#FF0000",
   "categories": [
     "utilities"
   ],

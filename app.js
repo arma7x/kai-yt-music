@@ -96,12 +96,12 @@ window.addEventListener("load", function() {
           new Kai({
             name: 'saveForm',
             data: {
-              title: '',
-              artist: '',
-              album: '',
-              genre: '',
-              year: '',
-              track: '',
+              title: isUpdate ? (video.title || '') : '',
+              artist: isUpdate ? (video.artist || '') : '',
+              album: isUpdate ? (video.album || '') : '',
+              genre: isUpdate ? (video.genre || '') : '',
+              year: isUpdate ? (video.year || '') : '',
+              track: isUpdate ? (video.track || '') : '',
             },
             verticalNavClass: '.saveFormNav',
             templateUrl: document.location.origin + '/templates/saveForm.html',
@@ -113,7 +113,7 @@ window.addEventListener("load", function() {
               submit: function() {
                 var obj = {
                   id: video.id,
-                  _title: video.title,
+                  _title: video._title || video.title,
                   album_art: video.thumbnail_src,
                   duration: video.duration,
                   title: false,
@@ -466,7 +466,13 @@ window.addEventListener("load", function() {
       this.data.bulk_results = bulk_results;
       this.methods.processResult(0);
     },
-    unmounted: function() {},
+    unmounted: function() {
+      this.data.title = 'database';
+      this.data.bulk_results = [];
+      this.data.results = [];
+      this.data.perPage = 1;
+      this.data.nextPage = null;
+    },
     methods: {
       selected: function(vid) {
         this.$router.showLoading();
@@ -583,7 +589,28 @@ window.addEventListener("load", function() {
           }
         }
       },
-      right: function() {}
+      right: function() {
+        const _selected = this.data.results[this.verticalNavIndex];
+        if (_selected) {
+          if (_selected.isVideo) {
+            const menus = [
+              { text: 'Update' },
+              { text: 'Delete' },
+            ]
+            this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
+              if (selected.text === 'Update') {
+                saveVideoID(this.$router, _selected, true);
+              } else {
+                console.log(selected.text);
+              }
+            }, () => {
+              setTimeout(() => {
+                this.methods.renderSoftKeyLCR();
+              }, 100);
+            }, 0);
+          }
+        }
+      }
     },
     dPadNavListener: {
       arrowUp: function() {
