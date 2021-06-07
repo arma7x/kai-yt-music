@@ -1056,14 +1056,14 @@ window.addEventListener("load", function() {
         if (_selected) {
           if (_selected.isVideo) {
             const menus = [
-              { text: 'Update' },
-              { text: 'Playlist' },
+              { text: 'Add/Remove from Playlist' },
+              { text: 'Update Metadata' },
               { text: 'Delete' },
             ]
             this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
-              if (selected.text === 'Update') {
+              if (selected.text === 'Update Metadata') {
                 saveVideoID(this.$router, _selected, true);
-              } else if (selected.text === 'Playlist') {
+              } else if (selected.text === 'Add/Remove from Playlist') {
                 this.methods.presentInPlaylist(_selected);
               } else if (selected.text === 'Delete') {
                 this.methods.deleteVideo(_selected);
