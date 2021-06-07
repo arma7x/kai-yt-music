@@ -195,6 +195,9 @@ window.addEventListener("load", function() {
     unmounted: function() {},
     methods: {
       renderSoftKeyLCR: function() {
+        if (this.$router.bottomSheet) {
+          return
+        }
         this.$router.setSoftKeyText('Add', '', '');
         if (this.verticalNavIndex > -1) {
           const selected = this.data.playlists[this.verticalNavIndex];
@@ -262,12 +265,55 @@ window.addEventListener("load", function() {
         const _selected = this.data.playlists[this.verticalNavIndex];
         if (_selected) {
           const menus = [
-            { text: 'Track' },
+            { text: 'Tracklist' },
             { text: 'Update' },
             { text: 'Delete' },
           ]
           this.$router.showOptionMenu('Action', menus, 'Select', (selected) => {
-            if (selected.text === 'Update') {
+            if (selected.text === 'Tracklist') {
+            const DB = this.$state.getState('DATABASE');
+            const PLYLS = this.$state.getState('PLAYLIST');
+              const cur = PLYLS[_selected.id];
+              if (cur) {
+                if (cur.collections.length > 0) {
+                  var collections = [];
+                  cur.collections.forEach((v) => {
+                    DB[v].checked = true;
+                    DB[v].text = DB[v].title || DB[v]._title;
+                    collections.push(DB[v]);
+                  });
+                  setTimeout(() => {
+                    this.$router.showMultiSelector(_selected.name, collections, 'Select', null, 'Save', (_collections_) => {
+                      var _tracklist = [];
+                      _collections_.forEach((v) => {
+                        if (v.checked) {
+                          _tracklist.push(v.id);
+                        }
+                      });
+                      console.log(_tracklist);
+                      PLYLS[_selected.id].collections = _tracklist;
+                      localforage.setItem(DB_PLAYLIST, PLYLS)
+                      .then(() => {
+                        return localforage.getItem(DB_PLAYLIST);
+                      })
+                      .then((UPDATED_PLAYLIST) => {
+                        this.$router.showToast('DONE');
+                        this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
+                      })
+                      .catch((err) => {
+                        this.$router.showToast(err.toString());
+                      });
+                    }, 'Cancel', null, () => {
+                      setTimeout(() => {
+                        this.methods.renderSoftKeyLCR();
+                      }, 100);
+                    }, 0);
+                  }, 105);
+                } else {
+                  this.$router.showToast('Empty Tracklist');
+                }
+              }
+            } else if (selected.text === 'Update') {
               addOrEditPlaylistDialog(this, _selected.name, _selected.id);
             } else {
               console.log(selected.text);
@@ -550,6 +596,9 @@ window.addEventListener("load", function() {
         this.methods.renderSoftKeyCR();
       },
       renderSoftKeyCR: function() {
+        if (this.$router.bottomSheet) {
+          return
+        }
         this.$router.setSoftKeyCenterText('');
         this.$router.setSoftKeyRightText('');
         if (this.verticalNavIndex > -1) {
