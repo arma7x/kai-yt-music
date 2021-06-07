@@ -742,6 +742,50 @@ window.addEventListener("load", function() {
           });
         }
       },
+      presentInPlaylist: function(video) {
+        var presents = []
+        const src = this.$state.getState('PLAYLIST');
+        for (var y in src) {
+          var checked = false;
+          if (src[y].collections.indexOf(video.id) > -1) {
+            checked = true;
+          }
+          presents.push({ "text": src[y].name, "id": src[y].id, "checked": checked });
+        }
+        if (presents.length === 0) {
+          this.$router.showToast("Empty Playlist");
+        } else {
+          this.$router.showMultiSelector('Playlist', presents, 'Select', null, 'Save', (_presents_) => {
+            _presents_.forEach((p) => {
+              const idx = src[p.id].collections.indexOf(video.id);
+              if (p.checked) {
+                if (idx === -1){
+                  src[p.id].collections.push(video.id);
+                }
+              } else {
+                if (idx > -1){
+                  src[p.id].collections.splice(idx, 1);
+                }
+              }
+            });
+            localforage.setItem(DB_PLAYLIST, src)
+            .then(() => {
+              return localforage.getItem(DB_PLAYLIST);
+            })
+            .then((UPDATED_PLAYLIST) => {
+              this.$router.showToast('DONE');
+              state.setState('PLAYLIST', UPDATED_PLAYLIST);
+            })
+            .catch((e) => {
+              this.$router.showToast(e.toString());
+            });
+          }, 'Cancel', null, () => {
+            setTimeout(() => {
+              this.methods.renderSoftKeyLCR();
+            }, 100);
+          }, 0);
+        }
+      },
       resetSearch: function() {
         const src = this.$state.getState('DATABASE');
         const bulk_results = [];
@@ -806,6 +850,9 @@ window.addEventListener("load", function() {
         this.methods.renderSoftKeyLCR();
       },
       renderSoftKeyLCR: function() {
+        if (this.$router.bottomSheet) {
+          return
+        }
         this.$router.setSoftKeyText('Search', '', '');
         if (this.verticalNavIndex > -1) {
           const selected = this.data.results[this.verticalNavIndex];
@@ -893,12 +940,14 @@ window.addEventListener("load", function() {
           if (_selected.isVideo) {
             const menus = [
               { text: 'Update' },
-              { text: 'Delete' },
               { text: 'Playlist' },
+              { text: 'Delete' },
             ]
             this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
               if (selected.text === 'Update') {
                 saveVideoID(this.$router, _selected, true);
+              } else if (selected.text === 'Playlist') {
+                this.methods.presentInPlaylist(_selected);
               } else {
                 console.log(selected.text);
               }
