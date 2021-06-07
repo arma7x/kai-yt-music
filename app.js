@@ -242,11 +242,12 @@ window.addEventListener("load", function() {
               msg = `${oldName} updated to ${name}`;
             }
             this.$router.showToast(msg);
-            state.setState('PLAYLIST', UPDATED_PLAYLIST);
+            this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
             this.methods.getPlaylist();
           })
-          .catch((e) => {
-            this.$router.showToast(e.toString());
+          .catch((err) => {
+            console.log(err);
+            this.$router.showToast(err.toString());
           });
         }
       }
@@ -370,6 +371,7 @@ window.addEventListener("load", function() {
                   state.setState('DATABASE', UPDATED_DATABASE);
                 })
                 .catch((err) => {
+                  console.log(err);
                   $router.showToast(err.toString());
                 });
               }
@@ -774,10 +776,10 @@ window.addEventListener("load", function() {
             })
             .then((UPDATED_PLAYLIST) => {
               this.$router.showToast('DONE');
-              state.setState('PLAYLIST', UPDATED_PLAYLIST);
+              this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
             })
-            .catch((e) => {
-              this.$router.showToast(e.toString());
+            .catch((err) => {
+              this.$router.showToast(err.toString());
             });
           }, 'Cancel', null, () => {
             setTimeout(() => {
@@ -786,7 +788,54 @@ window.addEventListener("load", function() {
           }, 0);
         }
       },
+      deleteVideo: function(video) {
+        var affected = [];
+        const DB = this.$state.getState('DATABASE');
+        const PLYLS = this.$state.getState('PLAYLIST');
+        if (DB[video.id]) {
+          this.$router.showDialog('Delete', `Are you sure to remove ${video._title} ?`, null, 'Yes', () => {
+            for (var y in PLYLS) {
+              const idx = PLYLS[y].collections.indexOf(video.id);
+              if (idx > -1){
+                PLYLS[y].collections.splice(idx, 1);
+                affected.push(PLYLS[y].name);
+              }
+            }
+            if (affected.length > 0) {
+              localforage.setItem(DB_PLAYLIST, PLYLS)
+              .then(() => {
+                return localforage.getItem(DB_PLAYLIST);
+              })
+              .then((UPDATED_PLAYLIST) => {
+                this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+            }
+            delete DB[video.id];
+            localforage.setItem(DB_NAME, DB)
+            .then(() => {
+              return localforage.getItem(DB_NAME);
+            })
+            .then((UPDATED_DATABASE) => {
+              this.$router.showToast('Deleted');
+              this.$state.setState('DATABASE', UPDATED_DATABASE);
+              this.methods.resetSearch();
+            })
+            .catch((err) => {
+              console.log(err);
+              this.$router.showToast(err.toString());
+            });
+          }, 'No', () => {}, ' ', null, () => {
+            setTimeout(() => {
+              this.methods.renderSoftKeyLCR();
+            }, 100);
+          });
+        }
+      },
       resetSearch: function() {
+        this.verticalNavIndex = -1;
         const src = this.$state.getState('DATABASE');
         const bulk_results = [];
         for (var x in src) {
@@ -948,7 +997,9 @@ window.addEventListener("load", function() {
                 saveVideoID(this.$router, _selected, true);
               } else if (selected.text === 'Playlist') {
                 this.methods.presentInPlaylist(_selected);
-              } else {
+              } else if (selected.text === 'Delete') {
+                this.methods.deleteVideo(_selected);
+              }  else {
                 console.log(selected.text);
               }
             }, () => {
@@ -1082,7 +1133,7 @@ window.addEventListener("load", function() {
 
   try {
     app.mount('app');
-  } catch(e) {
-    console.log(e);
+  } catch(err) {
+    console.log(err);
   }
 });
