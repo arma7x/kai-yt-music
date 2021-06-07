@@ -666,22 +666,19 @@ window.addEventListener("load", function() {
       title: 'database',
       bulk_results: [],
       results: [],
-      perPage: 10,
+      perPage: 9,
       nextPage: null
     },
     verticalNavClass: '.searchNav',
     templateUrl: document.location.origin + '/templates/search.html',
     mounted: function() {
       this.$router.setHeaderTitle('Database');
-      this.methods.resetSearch();
+      if (this.data.results.length === 0) {
+        this.methods.resetSearch();
+      }
+      this.methods.renderSoftKeyLCR();
     },
-    unmounted: function() {
-      this.data.title = 'database';
-      this.data.bulk_results = [];
-      this.data.results = [];
-      this.data.perPage = 1;
-      this.data.nextPage = null;
-    },
+    unmounted: function() {},
     methods: {
       selected: function(vid) {
         this.$router.showLoading();
@@ -1026,6 +1023,13 @@ window.addEventListener("load", function() {
         this.navigateListNav(1);
         this.methods.renderSoftKeyLCR();
       }
+    },
+    backKeyListener: function() {
+      this.data.title = 'database';
+      this.data.bulk_results = [];
+      this.data.results = [];
+      this.data.perPage = 9;
+      this.data.nextPage = null;
     },
   });
 
