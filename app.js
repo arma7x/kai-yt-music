@@ -271,8 +271,8 @@ window.addEventListener("load", function() {
           ]
           this.$router.showOptionMenu('Action', menus, 'Select', (selected) => {
             if (selected.text === 'Tracklist') {
-            const DB = this.$state.getState('DATABASE');
-            const PLYLS = this.$state.getState('PLAYLIST');
+              const DB = this.$state.getState('DATABASE');
+              const PLYLS = this.$state.getState('PLAYLIST');
               const cur = PLYLS[_selected.id];
               if (cur) {
                 if (cur.collections.length > 0) {
@@ -315,8 +315,30 @@ window.addEventListener("load", function() {
               }
             } else if (selected.text === 'Update') {
               addOrEditPlaylistDialog(this, _selected.name, _selected.id);
-            } else {
-              console.log(selected.text);
+            } else if (selected.text === 'Delete'){
+              const PLYLS = this.$state.getState('PLAYLIST');
+              if (PLYLS[_selected.id]) {
+                this.$router.showDialog('Delete', `Are you sure to remove ${_selected.name} ?`, null, 'Yes', () => {
+                  delete PLYLS[_selected.id];
+                  localforage.setItem(DB_PLAYLIST, PLYLS)
+                  .then(() => {
+                    return localforage.getItem(DB_PLAYLIST);
+                  })
+                  .then((UPDATED_PLAYLIST) => {
+                    this.$router.showToast(`${_selected.name} deleted`);
+                    this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
+                    this.verticalNavIndex = -1;
+                    this.methods.getPlaylist();
+                  })
+                  .catch((err) => {
+                    this.$router.showToast(err.toString());
+                  });
+                }, 'No', () => {}, ' ', null, () => {
+                  setTimeout(() => {
+                    this.methods.renderSoftKeyLCR();
+                  }, 100);
+                });
+              }
             }
           }, () => {
             setTimeout(() => {
@@ -721,7 +743,7 @@ window.addEventListener("load", function() {
     verticalNavClass: '.searchNav',
     templateUrl: document.location.origin + '/templates/search.html',
     mounted: function() {
-      this.$router.setHeaderTitle('Database');
+      this.$router.setHeaderTitle('Local Database');
       if (this.data.results.length === 0) {
         this.methods.resetSearch();
       }
@@ -1045,8 +1067,6 @@ window.addEventListener("load", function() {
                 this.methods.presentInPlaylist(_selected);
               } else if (selected.text === 'Delete') {
                 this.methods.deleteVideo(_selected);
-              }  else {
-                console.log(selected.text);
               }
             }, () => {
               setTimeout(() => {
@@ -1110,18 +1130,18 @@ window.addEventListener("load", function() {
       right: function() {
         const menus = [
           { text: 'Search' },
-          { text: 'Database' },
+          { text: 'Local Database' },
           { text: 'Playlist' },
-          { text: 'Artist' },
-          { text: 'Album' },
-          { text: 'Genre' },
+          // { text: 'Artist' },
+          // { text: 'Album' },
+          // { text: 'Genre' },
           { text: 'About' },
           { text: 'Exit' }
         ]
         this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
           if (selected.text === 'Search') {
             this.$router.push('search');
-          } else if (selected.text === 'Database') {
+          } else if (selected.text === 'Local Database') {
             this.$router.push('database');
           } else if (selected.text === 'Playlist') {
             this.$router.push('playlist');
