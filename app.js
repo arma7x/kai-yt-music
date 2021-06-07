@@ -1,5 +1,6 @@
 const DB_NAME = 'YT_MUSIC';
 const DB_PLAYLIST = 'YT_PLAYLIST';
+const DEFAULT_VOLUME = 0.02;
 
 if (navigator.mozAudioChannelManager) {
   navigator.mozAudioChannelManager.volumeControlChannel = 'content';
@@ -7,6 +8,54 @@ if (navigator.mozAudioChannelManager) {
 
 const PLAYER = document.createElement("audio");
 PLAYER.volume = 1;
+
+function convertTime(time) {
+  if (isNaN(time)) {
+    return '00:00';
+  }
+  var mins = Math.floor(time / 60);
+  if (mins < 10) {
+    mins = '0' + String(mins);
+  }
+  var secs = Math.floor(time % 60);
+  if (secs < 10) {
+    secs = '0' + String(secs);
+  }
+  return mins + ':' + secs;
+}
+
+function toggleVolume(MINI_PLAYER, $router) {
+  if (navigator.mozAudioChannelManager) {
+    navigator.volumeManager.requestShow();
+    $router.setSoftKeyRightText('');
+  } else {
+    $router.setSoftKeyRightText((MINI_PLAYER.volume * 100).toFixed(0) + '%');
+  }
+}
+
+function volumeUp(PLYR, $router) {
+  if (navigator.mozAudioChannelManager) {
+    navigator.volumeManager.requestUp();
+  } else {
+    if (PLYR.volume < 1) {
+      PLYR.volume = parseFloat((PLYR.volume + DEFAULT_VOLUME).toFixed(2));
+      toggleVolume(PLYR, $router);
+      $router.showToast('Volume ' + (PLYR.volume * 100).toFixed(0).toString() + '%');
+    }
+  }
+}
+
+function volumeDown(PLYR, $router) {
+  if (navigator.mozAudioChannelManager) {
+    navigator.volumeManager.requestDown();
+  } else {
+    if (PLYR.volume > 0) {
+      PLYR.volume = parseFloat((PLYR.volume - DEFAULT_VOLUME).toFixed(2));
+      toggleVolume(PLYR, $router);
+      $router.showToast('Volume ' + (PLYR.volume * 100).toFixed(0).toString() + '%');
+    }
+  }
+}
 
 window.addEventListener("load", function() {
 
@@ -59,65 +108,108 @@ window.addEventListener("load", function() {
     }
   });
 
-  const miniPlayer = function($router, cb = () => {}) {
+  const miniPlayer = function($router, url, cb = () => {}) {
+
+    const MINI_PLAYER = document.createElement("audio");
+    MINI_PLAYER.volume = 1;
+    MINI_PLAYER.mozAudioChannelType = 'content';
+    MINI_PLAYER.src = url;
+
     const miniPlayerDialog = Kai.createDialog('Mini Player', `
       <div>
         <div>
-          <input id="miniplayer" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/>
+          <input id="duration_slider" style="width:100%" value="0" type="range" min="0" max="100" disabled/>
+        </div>
+        <div class="kui-row-center">
+          <div id="current_time">00:00</div>
+          <div id="duration">00:00</div>
+        </div>
+        <div>
+          <input id="__focus__" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/>
         </div>
       </div>`,
     null, '', undefined, '', undefined, '', undefined, undefined, $router);
     miniPlayerDialog.mounted = () => {
       setTimeout(() => {
-        setTimeout(() => {
-          $router.setSoftKeyText('Exit' , 'PLAY', 'Pause');
-        }, 101);
-        const MINI_PLAYER = document.getElementById('miniplayer');
-        if (!MINI_PLAYER) {
+        $router.setSoftKeyText('Exit' , '', '');
+        if (!navigator.mozAudioChannelManager) {
+          $router.setSoftKeyRightText((MINI_PLAYER.volume * 100).toFixed(0) + '%');
+        }
+        const DURATION_SLIDER = document.getElementById('duration_slider');
+        const CURRENT_TIME = document.getElementById('current_time');
+        const DURATION = document.getElementById('duration');
+        const FOCUS = document.getElementById('__focus__');
+        if (!FOCUS) {
           return;
         }
-        MINI_PLAYER.focus();
-        MINI_PLAYER.addEventListener('keydown', (evt) => {
+        FOCUS.focus();
+        FOCUS.addEventListener('keydown', (evt) => {
           switch (evt.key) {
             case 'Backspace':
             case 'EndCall':
-              console.log('EXIT');
-              PLAYER.pause();
+              MINI_PLAYER.pause();
               $router.hideBottomSheet();
               setTimeout(() => {
                 cb();
-                MINI_PLAYER.blur();
+                FOCUS.blur();
               }, 100);
               break
             case 'SoftRight':
-              console.log('PAUSE');
-              PLAYER.pause();
               break
             case 'SoftLeft':
-              console.log('EXIT 2');
-              PLAYER.pause();
+              MINI_PLAYER.pause();
               $router.hideBottomSheet();
               setTimeout(() => {
                 cb();
-                MINI_PLAYER.blur();
+                FOCUS.blur();
               }, 100);
               break
             case 'Enter':
-              console.log('PLAY');
-              PLAYER.play();
+              if (MINI_PLAYER.duration > 0 && !MINI_PLAYER.paused) {
+                MINI_PLAYER.pause();
+              } else {
+                MINI_PLAYER.play();
+              }
               break
           }
         });
-      });
+
+        MINI_PLAYER.ontimeupdate = (evt) => {
+          var currentTime = evt.target.currentTime;
+          var duration = evt.target.duration;
+          CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
+          DURATION.innerHTML = convertTime(evt.target.duration);
+          if (isNaN(duration)) {
+            DURATION_SLIDER.value = 0;
+          } else {
+            DURATION_SLIDER.value = (currentTime + .75) / duration * 100;
+          }
+        }
+
+        MINI_PLAYER.onpause = () => {
+          $router.setSoftKeyCenterText('PLAY');
+          console.log('PLAY');
+        }
+
+        MINI_PLAYER.onplay = () => {
+          $router.setSoftKeyCenterText('PAUSE');
+          console.log('PAUSE');
+        }
+
+        MINI_PLAYER.play();
+
+      }, 101);
     }
     miniPlayerDialog.dPadNavListener = {
       arrowUp: function() {
-        const MINI_PLAYER = document.getElementById('miniplayer');
-        MINI_PLAYER.focus();
+        volumeUp(MINI_PLAYER, $router)
+        const FOCUS = document.getElementById('__focus__');
+        FOCUS.focus();;
       },
       arrowDown: function() {
-        const MINI_PLAYER = document.getElementById('miniplayer');
-        MINI_PLAYER.focus();
+        volumeDown(MINI_PLAYER, $router);
+        const FOCUS = document.getElementById('__focus__');
+        FOCUS.focus();
       }
     }
     $router.showBottomSheet(miniPlayerDialog);
@@ -531,19 +623,13 @@ window.addEventListener("load", function() {
       playAudio: function(obj) {
         if (obj.url != null) {
           console.log(obj.url);
-          PLAYER.mozAudioChannelType = 'content';
-          PLAYER.src = obj.url;
-          PLAYER.play();
-          miniPlayer(this.$router, this.methods.renderSoftKeyCR);
+          miniPlayer(this.$router, obj.url, this.methods.renderSoftKeyCR);
         } else {
           this.$router.showLoading();
           decryptSignature(obj.signatureCipher, obj.player)
           .then((url) => {
             console.log(url);
-            PLAYER.mozAudioChannelType = 'content';
-            PLAYER.src = url;
-            PLAYER.play();
-            miniPlayer(this.$router, this.methods.renderSoftKeyCR);
+            miniPlayer(this.$router, url, this.methods.renderSoftKeyCR);
           })
           .catch((err) => {
             console.log(err);
@@ -790,19 +876,13 @@ window.addEventListener("load", function() {
       playAudio: function(obj) {
         if (obj.url != null) {
           console.log(obj.url);
-          PLAYER.mozAudioChannelType = 'content';
-          PLAYER.src = obj.url;
-          PLAYER.play();
-          miniPlayer(this.$router, this.methods.renderSoftKeyLCR);
+          miniPlayer(this.$router, obj.url, this.methods.renderSoftKeyLCR);
         } else {
           this.$router.showLoading();
           decryptSignature(obj.signatureCipher, obj.player)
           .then((url) => {
             console.log(url);
-            PLAYER.mozAudioChannelType = 'content';
-            PLAYER.src = url;
-            PLAYER.play();
-            miniPlayer(this.$router, this.methods.renderSoftKeyLCR);
+            miniPlayer(this.$router, url, this.methods.renderSoftKeyLCR);
           })
           .catch((err) => {
             console.log(err);
