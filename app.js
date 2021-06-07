@@ -174,15 +174,20 @@ window.addEventListener("load", function() {
           }
         });
 
+        var duration = 1;
+        MINI_PLAYER.onloadedmetadata = (evt) => {
+          duration = evt.target.duration;
+          DURATION.innerHTML = convertTime(evt.target.duration);
+          DURATION_SLIDER.setAttribute("max", duration);
+        }
+
         MINI_PLAYER.ontimeupdate = (evt) => {
           var currentTime = evt.target.currentTime;
-          var duration = evt.target.duration;
           CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-          DURATION.innerHTML = convertTime(evt.target.duration);
           if (isNaN(duration)) {
             DURATION_SLIDER.value = 0;
           } else {
-            DURATION_SLIDER.value = (currentTime + .75) / duration * 100;
+            DURATION_SLIDER.value = currentTime
           }
         }
 
@@ -211,6 +216,9 @@ window.addEventListener("load", function() {
         const FOCUS = document.getElementById('__focus__');
         FOCUS.focus();
       }
+    }
+    miniPlayerDialog.backKeyListener = function() {
+      return false;
     }
     $router.showBottomSheet(miniPlayerDialog);
   }
