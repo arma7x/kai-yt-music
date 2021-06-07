@@ -328,7 +328,7 @@ window.addEventListener("load", function() {
             }
             const pid = id || new Date().getTime();
             if (PLAYLIST[pid]) {
-              oldName = PLAYLIST[pid].name;
+              oldName = PLAYLIST[pid].name.toString();
               PLAYLIST[pid].name = name;
             } else {
               const obj = { id: pid, name: name, collections: [] };
@@ -1207,7 +1207,7 @@ window.addEventListener("load", function() {
     methods: {
       selected: function() {},
     },
-    softKeyText: { left: 'Track', center: '', right: 'Menu' },
+    softKeyText: { left: 'Tracklist', center: '', right: 'Menu' },
     softKeyListener: {
       left: function() {
         // TRACK
