@@ -153,6 +153,7 @@ function getVideoLinks(id) {
       for (var x in AdaptationSet) {
         if (typeof AdaptationSet[x].Representation == "object" && !AdaptationSet[x].Representation.length) {
           formats.push({
+            id: id,
             mimeType: AdaptationSet[x]._mimeType,
             bitrate: AdaptationSet[x].Representation._id,
             url: AdaptationSet[x].Representation.BaseURL,
@@ -162,6 +163,7 @@ function getVideoLinks(id) {
         } else if (typeof AdaptationSet[x].Representation == "object" && AdaptationSet[x].Representation.length) {
           for (var y in AdaptationSet[x].Representation) {
             formats.push({
+              id: id,
               mimeType: AdaptationSet[x]._mimeType,
               bitrate: AdaptationSet[x].Representation[y]._id,
               url: AdaptationSet[x].Representation[y].BaseURL,
@@ -176,6 +178,7 @@ function getVideoLinks(id) {
       var formats = [];
       for (var x in result.adaptiveFormats) {
         formats.push({
+          id: id,
           mimeType: result.adaptiveFormats[x].mimeType.split(';')[0],
           bitrate: result.adaptiveFormats[x].bitrate,
           signatureCipher: result.adaptiveFormats[x].signatureCipher,

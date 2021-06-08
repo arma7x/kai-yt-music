@@ -1,5 +1,6 @@
 const DB_NAME = 'YT_MUSIC';
 const DB_PLAYLIST = 'YT_PLAYLIST';
+const DB_CACHED_URLS = 'YT_CACHED_URLS';
 const DEFAULT_VOLUME = 0.02;
 
 if (navigator.mozAudioChannelManager) {
@@ -55,6 +56,74 @@ function volumeDown(PLYR, $router) {
       $router.showToast('Volume ' + (PLYR.volume * 100).toFixed(0).toString() + '%');
     }
   }
+}
+
+function getURLParam(key, target) {
+  var values = [];
+  if (!target) target = location.href;
+
+  key = key.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+
+  var pattern = key + '=([^&#]+)';
+  var o_reg = new RegExp(pattern,'ig');
+  while (true){
+    var matches = o_reg.exec(target);
+    if (matches && matches[1]){
+      values.push(matches[1]);
+    } else {
+      break;
+    }
+  }
+
+  if (!values.length){
+    return [];
+  } else {
+    return values.length == 1 ? [values[0]] : values;
+  }
+}
+
+function cacheURL(obj, url) {
+  var params = getURLParam('expire', url);
+  if (params[0]) {
+    console.log(url);
+    localforage.getItem(DB_CACHED_URLS)
+    .then((cached) => {
+      if (cached == null) {
+        cached = {};
+      }
+      if (cached[obj.id] == null) {
+        cached[obj.id] = {};
+      }
+      cached[obj.id][obj.br] = {
+        url: url,
+        expire: parseInt(params[0]) * 1000
+      }
+      localforage.setItem(DB_CACHED_URLS, cached);
+    });
+  }
+}
+
+function getCachedURL(id, br) {
+  return new Promise((resolve, reject) => {
+    localforage.getItem(DB_CACHED_URLS)
+    .then((cached) => {
+      if (cached == null) {
+        cached = {};
+      }
+      if (cached[id] == null) {
+        return reject("ID not exist");
+      }
+      if (cached[id][br] == null) {
+        return reject("Bitrate not exist");
+      }
+      const now = new Date();
+      const expire = new Date(cached[id][br]['expire']);
+      if (now < expire) {
+        return resolve(cached[id][br]['url']);
+      }
+      return reject("Expired link");
+    });
+  });
 }
 
 window.addEventListener("load", function() {
@@ -603,9 +672,17 @@ window.addEventListener("load", function() {
               if (br > 999) {
                 br = Math.round(br/1000);
               }
+              link.br = br;
               link.text = link.mimeType + '(' + br.toString() + 'kbps)';
               audio.push(link);
             }
+          });
+          audio.sort((a, b) => {
+            if (a['br'] > b['br'])
+              return 1;
+            else if (a['br'] < b['br'])
+              return -1;
+            return 0;
           });
           console.log(audio);
           if (audio.length > 0) {
@@ -622,6 +699,7 @@ window.addEventListener("load", function() {
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
           this.methods.playAudio(selected);
+          console.log(selected);
         }, () => {
           setTimeout(() => {
             this.methods.renderSoftKeyCR();
@@ -634,16 +712,26 @@ window.addEventListener("load", function() {
           miniPlayer(this.$router, obj.url, this.methods.renderSoftKeyCR);
         } else {
           this.$router.showLoading();
-          decryptSignature(obj.signatureCipher, obj.player)
-          .then((url) => {
-            console.log(url);
-            miniPlayer(this.$router, url, this.methods.renderSoftKeyCR);
-          })
-          .catch((err) => {
-            console.log(err);
-          })
-          .finally(() => {
+          getCachedURL(obj.id, obj.br)
+          .then((_url) => {
             this.$router.hideLoading();
+            console.log("From Cached" ,_url);
+            miniPlayer(this.$router, _url, this.methods.renderSoftKeyLCR);
+          })
+          .catch((_err) => {
+            console.log(_err);
+            decryptSignature(obj.signatureCipher, obj.player)
+            .then((url) => {
+              cacheURL(obj, url);
+              console.log("From Server" ,url);
+              miniPlayer(this.$router, url, this.methods.renderSoftKeyLCR);
+            })
+            .catch((err) => {
+              console.log(err);
+            })
+            .finally(() => {
+              this.$router.hideLoading();
+            });
           });
         }
       },
@@ -856,9 +944,17 @@ window.addEventListener("load", function() {
               if (br > 999) {
                 br = Math.round(br/1000);
               }
+              link.br = br;
               link.text = link.mimeType + '(' + br.toString() + 'kbps)';
               audio.push(link);
             }
+          });
+          audio.sort((a, b) => {
+            if (a['br'] > b['br'])
+              return 1;
+            else if (a['br'] < b['br'])
+              return -1;
+            return 0;
           });
           console.log(audio);
           if (audio.length > 0) {
@@ -875,6 +971,7 @@ window.addEventListener("load", function() {
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
           this.methods.playAudio(selected);
+          console.log(selected);
         }, () => {
           setTimeout(() => {
             this.methods.renderSoftKeyLCR();
@@ -887,16 +984,26 @@ window.addEventListener("load", function() {
           miniPlayer(this.$router, obj.url, this.methods.renderSoftKeyLCR);
         } else {
           this.$router.showLoading();
-          decryptSignature(obj.signatureCipher, obj.player)
-          .then((url) => {
-            console.log(url);
-            miniPlayer(this.$router, url, this.methods.renderSoftKeyLCR);
-          })
-          .catch((err) => {
-            console.log(err);
-          })
-          .finally(() => {
+          getCachedURL(obj.id, obj.br)
+          .then((_url) => {
             this.$router.hideLoading();
+            console.log("From Cached" ,_url);
+            miniPlayer(this.$router, _url, this.methods.renderSoftKeyLCR);
+          })
+          .catch((_err) => {
+            console.log(_err);
+            decryptSignature(obj.signatureCipher, obj.player)
+            .then((url) => {
+              cacheURL(obj, url);
+              console.log("From Server" ,url);
+              miniPlayer(this.$router, url, this.methods.renderSoftKeyLCR);
+            })
+            .catch((err) => {
+              console.log(err);
+            })
+            .finally(() => {
+              this.$router.hideLoading();
+            });
           });
         }
       },
