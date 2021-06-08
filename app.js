@@ -7,8 +7,8 @@ if (navigator.mozAudioChannelManager) {
   navigator.mozAudioChannelManager.volumeControlChannel = 'content';
 }
 
-const PLAYER = document.createElement("audio");
-PLAYER.volume = 1;
+const MAIN_PLAYER = document.createElement("audio");
+MAIN_PLAYER.volume = 1;
 
 function convertTime(time) {
   if (isNaN(time)) {
@@ -270,6 +270,7 @@ window.addEventListener("load", function() {
           console.log('PAUSE');
         }
 
+        MAIN_PLAYER.pause();
         MINI_PLAYER.play();
 
       }, 101);
@@ -1405,3 +1406,13 @@ window.addEventListener("load", function() {
     console.log(err);
   }
 });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+  .then(function(swReg) {
+    console.error('Service Worker Registered');
+  })
+  .catch(function(error) {
+    console.error('Service Worker Error', error);
+  });
+}

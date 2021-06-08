@@ -23,6 +23,9 @@
   "origin": "app://ytm.arma7x.com",
   "type": "privileged",
   "permissions": {
+    "serviceworker": {
+      "description": "Needed for assocating service worker"
+    },
     "browser": {
       "description": "Required for iframe"
     },
