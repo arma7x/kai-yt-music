@@ -195,24 +195,17 @@ window.addEventListener("load", function() {
   });
 
   localforage.getItem(DB_PLAYING)
-  .then((playing) => {
-    if (playing == null) {
+  .then((playlist_id) => {
+    if (playlist_id == null) {
       playDefaultCollection();
     } else {
-      //localforage.getItem(DB_PLAYLIST)
-      //.then((PLAYLIST) => {
-        //var _id = null
-        //for (var y in PLAYLIST) {
-          //if (PLAYLIST[y].name === playing) {
-            //TRACK_NAME = PLAYLIST[y].name;
-            //break
-          //}
-        //}
-      //});
+      playPlaylistCollection(playlist_id);
     }
   });
 
   function playDefaultCollection() {
+    localforage.removeItem(DB_PLAYING);
+    state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
     localforage.getItem(DB_NAME)
     .then((tracks) => {
@@ -220,6 +213,47 @@ window.addEventListener("load", function() {
         TRACKLIST.push(tracks[y]);
       }
       getURL(state.getState('TRACKLIST_IDX'));
+    });
+  }
+
+  function playPlaylistCollection(id) {
+    localforage.getItem(DB_PLAYLIST)
+    .then((PLAYLIST) => {
+      if (PLAYLIST == null) {
+        PLAYLIST = {};
+      }
+      if (PLAYLIST[id]) {
+        if (PLAYLIST[id].collections.length === 0) {
+          return Promise.reject('Empty Playlist');
+        }
+        return Promise.resolve(PLAYLIST[id]);
+      }
+      playDefaultCollection();
+      return Promise.reject('Playlist not exist');
+    })
+    .then((PLYLST) => {
+      localforage.getItem(DB_NAME)
+      .then((DATABASE) => {
+        const collections = []
+        if (DATABASE == null) {
+          router.showToast('Empty Database');
+        } else {
+          PLYLST.collections.forEach((c) => {
+            if (DATABASE[c]) {
+              collections.push(DATABASE[c]);
+            }
+          });
+          state.setState('TRACKLIST_IDX', 0);
+          TRACK_NAME = PLYLST.name;
+          TRACKLIST = collections;
+          getURL(state.getState('TRACKLIST_IDX'));
+          router.showToast(`PLAYING ${TRACK_NAME}`);
+          localforage.setItem(DB_PLAYING, PLYLST.id);
+        }
+      });
+    })
+    .catch((e) => {
+      router.showToast(e.toString());
     });
   }
 
@@ -571,7 +605,12 @@ window.addEventListener("load", function() {
       left: function() {
         addOrEditPlaylistDialog(this, '', null);
       },
-      center: function() {},
+      center: function() {
+        const _selected = this.data.playlists[this.verticalNavIndex];
+        if (_selected) {
+          playPlaylistCollection(_selected.id);
+        }
+      },
       right: function() {
         const _selected = this.data.playlists[this.verticalNavIndex];
         if (_selected) {
@@ -1405,6 +1444,8 @@ window.addEventListener("load", function() {
                 this.methods.presentInPlaylist(_selected);
               } else if (selected.text === 'Delete') {
                 this.methods.deleteVideo(_selected);
+              } else if (selected.text === 'Play All') {
+                playDefaultCollection();
               }
             }, () => {
               setTimeout(() => {
@@ -1462,7 +1503,8 @@ window.addEventListener("load", function() {
 
     },
     unmounted: function() {
-      this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenState);
+      this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
+      this.$state.removeStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
       MAIN_PLAYER.ontimeupdate = null;
     },
     methods: {
