@@ -163,14 +163,19 @@ window.addEventListener("load", function() {
     DATABASE: {},
     PLAYLIST: {},
     TRACKLIST_IDX: 0,
+    TRACK_DURATION: 0,
   });
 
-  MAIN_PLAYER.onended = function(e) {
+  MAIN_PLAYER.onended = (e) => {
     const next = state.getState('TRACKLIST_IDX') + 1;
     if (TRACKLIST[next]) {
       state.setState('TRACKLIST_IDX', next);
       getURL(next);
     }
+  }
+
+  MAIN_PLAYER.onloadedmetadata = (evt) => {
+    state.setState('TRACK_DURATION', evt.target.duration);
   }
 
   localforage.getItem(DB_NAME)
@@ -219,8 +224,14 @@ window.addEventListener("load", function() {
   }
 
   function getURL(idx) {
+    if (router && router.loading) {
+      router.showLoading();
+    }
     getVideoLinks(TRACKLIST[idx].id)
     .then((links) => {
+      if (router && router.loading) {
+        router.hideLoading();
+      }
       var obj = null;
       var quality = 0;
       links.forEach((link) => {
@@ -258,6 +269,9 @@ window.addEventListener("load", function() {
       })
       .catch((_err) => {
         console.log(_err);
+        if (router && router.loading) {
+          router.showLoading();
+        }
         decryptSignature(obj.signatureCipher, obj.player)
         .then((url) => {
           cacheURL(obj, url);
@@ -267,8 +281,14 @@ window.addEventListener("load", function() {
           MAIN_PLAYER.play();
         })
         .catch((err) => {
+          MAIN_PLAYER.pause();
           console.log(err);
-        });
+        })
+        .finally(() => {
+          if (router && router.loading) {
+            router.hideLoading();
+          }
+        })
       });
     }
   }
@@ -369,7 +389,6 @@ window.addEventListener("load", function() {
           }
         });
 
-        var duration = 1;
         MINI_PLAYER.onloadedmetadata = (evt) => {
           duration = evt.target.duration;
           DURATION.innerHTML = convertTime(evt.target.duration);
@@ -379,11 +398,7 @@ window.addEventListener("load", function() {
         MINI_PLAYER.ontimeupdate = (evt) => {
           var currentTime = evt.target.currentTime;
           CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-          if (isNaN(duration)) {
-            DURATION_SLIDER.value = 0;
-          } else {
-            DURATION_SLIDER.value = currentTime
-          }
+          DURATION_SLIDER.value = currentTime;
         }
 
         MINI_PLAYER.onpause = () => {
@@ -1428,19 +1443,54 @@ window.addEventListener("load", function() {
   const home = new Kai({
     name: 'home',
     data: {
-      title: 'home',
-      results: []
+      title: 'UNKNOWN',
+      artist: 'UNKNOWN',
+      album: 'UNKNOWN',
+      genre: 'UNKNOWN',
+      tx_tl: '0/0',
     },
-    verticalNavClass: '.homeNav',
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
       this.$router.setHeaderTitle('YT Music');
+      MAIN_PLAYER.ontimeupdate = this.methods.ontimeupdate;
+
+      this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
+      this.methods.listenTracklistIdx(this.$state.getState('TRACKLIST_IDX'));
+
+      this.$state.addStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
+      this.methods.listenTrackDuration(this.$state.getState('TRACK_DURATION'));
+
     },
     unmounted: function() {
-      
+      this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenState);
+      MAIN_PLAYER.ontimeupdate = null;
     },
     methods: {
-      selected: function() {},
+      listenTracklistIdx: function(val) {
+        const T = TRACKLIST[val];
+        if (T) {
+          this.setData({
+            title: T.title || T._title,
+            artist: T.artist || 'UNKNOWN',
+            album: T.album || 'UNKNOWN',
+            genre: T.genre || 'UNKNOWN',
+            tx_tl: `${(val + 1).toString()}/${TRACKLIST.length.toString()}`
+          });
+        }
+      },
+      listenTrackDuration: function(val) {
+        const DURATION_SLIDER = document.getElementById('home_duration_slider');
+        const DURATION = document.getElementById('home_duration');
+        DURATION.innerHTML = convertTime(val);
+        DURATION_SLIDER.setAttribute("max", val);
+      },
+      ontimeupdate: function(evt) {
+        const DURATION_SLIDER = document.getElementById('home_duration_slider');
+        const CURRENT_TIME = document.getElementById('home_current_time');
+        const currentTime = evt.target.currentTime;
+        CURRENT_TIME.innerHTML = convertTime(currentTime);
+        DURATION_SLIDER.value = currentTime;
+      }
     },
     softKeyText: { left: 'Tracklist', center: '', right: 'Menu' },
     softKeyListener: {
@@ -1497,7 +1547,6 @@ window.addEventListener("load", function() {
       },
       arrowRight: function() {
         const move = this.$state.getState('TRACKLIST_IDX') + 1;
-        console.log(move);
         if (TRACKLIST[move]) {
           this.$state.setState('TRACKLIST_IDX', move);
           getURL(move);
@@ -1508,7 +1557,6 @@ window.addEventListener("load", function() {
       },
       arrowLeft: function() {
         const move = this.$state.getState('TRACKLIST_IDX') - 1;
-        console.log(move);
         if (TRACKLIST[move]) {
           this.$state.setState('TRACKLIST_IDX', move);
           getURL(move);

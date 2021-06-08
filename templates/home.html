@@ -1,11 +1,24 @@
-<div class="kui-flex-wrap">
-  <ul class="kui-list kai-container">
-    {{#results}}
-    <li class="searchNav" style="border-bottom:1px dashed #320374;">
-      <div class="kui-row-center">
-        <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{ name }}</h5>
-      </div>
-    </li>
-    {{/results}}
-  </ul>
+<div class="kui-flex-wrap" style="background-color:#000000;color:#ffffff;font-size:14px;">
+  <style>
+    pre {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <div class="kai-container" style="margin:5px;">
+    <div>
+      <input id="home_duration_slider" style="width:100%" value="0" type="range" min="0" max="100" disabled/>
+    </div>
+    <div class="kui-row-center">
+      <div id="home_current_time">00:00</div>
+      <div id="home_duration">00:00</div>
+    </div>
+    <div>
+      <div><pre>Title: {{ title }}</pre></div>
+      <div><pre>Artist: {{ artist }}</pre></div>
+      <div><pre>Album: {{ album }}</pre></div>
+      <div><pre>Genre: {{ genre }}</pre></div>
+      <div><pre>{{ tx_tl }}</pre></div>
+    </div>
+  </div>
 </div>
