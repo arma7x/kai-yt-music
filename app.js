@@ -258,6 +258,9 @@ window.addEventListener("load", function() {
   }
 
   function getURL(idx) {
+    if (TRACKLIST[idx] == null) {
+      return
+    }
     if (router && router.loading) {
       router.showLoading();
     }
