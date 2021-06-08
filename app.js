@@ -1,6 +1,9 @@
+localforage.setDriver(localforage.LOCALSTORAGE);
+
 const DB_NAME = 'YT_MUSIC';
 const DB_PLAYLIST = 'YT_PLAYLIST';
 const DB_CACHED_URLS = 'YT_CACHED_URLS';
+const DB_PLAYING = 'YT_PLAYING';
 const DEFAULT_VOLUME = 0.02;
 
 if (navigator.mozAudioChannelManager) {
@@ -9,6 +12,87 @@ if (navigator.mozAudioChannelManager) {
 
 const MAIN_PLAYER = document.createElement("audio");
 MAIN_PLAYER.volume = 1;
+var TRACK_NAME = '';
+var TRACKLIST = [];
+var TRACKLIST_IDX = 0;
+
+localforage.getItem(DB_PLAYING)
+.then((playing) => {
+  if (playing == null) {
+    TRACK_NAME = 'YT MUSIC';
+    localforage.getItem(DB_NAME)
+    .then((tracks) => {
+      for (var y in tracks) {
+        TRACKLIST.push(tracks[y]);
+      }
+      console.log(TRACK_NAME);
+      console.log(TRACKLIST);
+      getVideoLinks(TRACKLIST[TRACKLIST_IDX].id)
+      .then((links) => {
+        var obj = null;
+        var quality = 0;
+        links.forEach((link) => {
+          if (link.mimeType.indexOf('audio') > -1) {
+            var br = parseInt(link.bitrate);
+            if (br > 999) {
+              br = Math.round(br/1000);
+            }
+            link.br = br;
+            if (link.br >= quality) {
+              obj = link;
+              quality = link.br;
+            }
+          }
+        });
+        if (obj) {
+          playMainAudio(obj);
+        }
+      });
+    });
+  } else {
+    localforage.getItem(DB_PLAYLIST)
+    .then((PLAYLIST) => {
+      var _id = null
+      for (var y in PLAYLIST) {
+        if (PLAYLIST[y].name === playing) {
+          TRACK_NAME = PLAYLIST[y].name;
+          break
+        }
+      }
+    });
+  }
+});
+
+function playMainAudio(obj) {
+  if (obj.url != null) {
+    console.log(obj.url);
+    MAIN_PLAYER.mozAudioChannelType = 'content';
+    MAIN_PLAYER.src = obj.url;
+    MAIN_PLAYER.play();
+  } else {
+    getCachedURL(obj.id, obj.br)
+    .then((_url) => {
+      console.log("From Cached" ,_url);
+      MAIN_PLAYER.mozAudioChannelType = 'content';
+      MAIN_PLAYER.src = _url;
+      MAIN_PLAYER.play();
+    })
+    .catch((_err) => {
+      console.log(_err);
+      decryptSignature(obj.signatureCipher, obj.player)
+      .then((url) => {
+        cacheURL(obj, url);
+        console.log("From Server" ,url);
+        MAIN_PLAYER.mozAudioChannelType = 'content';
+        MAIN_PLAYER.src = url;
+        MAIN_PLAYER.play();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    });
+  }
+}
 
 function convertTime(time) {
   if (isNaN(time)) {
@@ -128,11 +212,9 @@ function getCachedURL(id, br) {
 
 window.addEventListener("load", function() {
 
-  localforage.setDriver(localforage.LOCALSTORAGE);
-
   const state = new KaiState({
     DATABASE: {},
-    PLAYLIST: {}
+    PLAYLIST: {},
   });
 
   localforage.getItem(DB_NAME)
@@ -1252,6 +1334,7 @@ window.addEventListener("load", function() {
         if (_selected) {
           if (_selected.isVideo) {
             const menus = [
+              { text: 'Play All' },
               { text: 'Add/Remove from Playlist' },
               { text: 'Update Metadata' },
               { text: 'Delete' },
