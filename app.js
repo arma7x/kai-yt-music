@@ -351,7 +351,7 @@ window.addEventListener("load", function() {
   function playMiniAudio(_this, obj) {
     if (obj.url != null) {
       console.log(obj.url);
-      miniPlayer(this.$router, obj.url, _this.methods.renderSoftKeyLCR);
+      miniPlayer(_this.$router, obj.url, _this.methods.renderSoftKeyLCR);
     } else {
       _this.$router.showLoading();
       getCachedURL(obj.id, obj.br)
