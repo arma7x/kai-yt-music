@@ -4,6 +4,7 @@ const DB_NAME = 'YT_MUSIC';
 const DB_PLAYLIST = 'YT_PLAYLIST';
 const DB_CACHED_URLS = 'YT_CACHED_URLS';
 const DB_PLAYING = 'YT_PLAYING';
+const DB_CONFIGURATION = 'YT_CONFIGURATION';
 const DEFAULT_VOLUME = 0.02;
 
 if (navigator.mozAudioChannelManager) {
@@ -160,6 +161,7 @@ window.addEventListener("load", function() {
   var TRACKLIST = [];
 
   const state = new KaiState({
+    CONFIGURATION: {},
     DATABASE: {},
     PLAYLIST: {},
     TRACKLIST_IDX: 0,
@@ -177,6 +179,20 @@ window.addEventListener("load", function() {
   MAIN_PLAYER.onloadedmetadata = (evt) => {
     state.setState('TRACK_DURATION', evt.target.duration);
   }
+
+  localforage.getItem(DB_CONFIGURATION)
+  .then((CONFIGURATION) => {
+    if (CONFIGURATION == null) {
+      CONFIGURATION = {
+        mimeType: 'audio', // audio, audio/webm, audio/mp4
+      };
+    }
+    if (CONFIGURATION['mimeType'] == null) {
+      CONFIGURATION['mimeType'] = 'audio';
+    }
+    localforage.setItem(DB_CONFIGURATION, CONFIGURATION)
+    state.setState('CONFIGURATION', CONFIGURATION);
+  });
 
   localforage.getItem(DB_NAME)
   .then((DATABASE) => {
@@ -271,8 +287,9 @@ window.addEventListener("load", function() {
       }
       var obj = null;
       var quality = 0;
+      const MIME = state.getState('CONFIGURATION')['mimeType'] || 'audio';
       links.forEach((link) => {
-        if (link.mimeType.indexOf('audio') > -1) {
+        if (link.mimeType.indexOf(MIME) > -1) {
           var br = parseInt(link.bitrate);
           if (br > 999) {
             br = Math.round(br/1000);
@@ -284,6 +301,7 @@ window.addEventListener("load", function() {
           }
         }
       });
+      console.log(MIME, obj);
       if (obj) {
         playMainAudio(obj);
       }
@@ -1565,6 +1583,7 @@ window.addEventListener("load", function() {
           { text: 'Search' },
           { text: 'Local Database' },
           { text: 'Playlist' },
+          { text: 'Preferred Mime' },
           // { text: 'Artist' },
           // { text: 'Album' },
           // { text: 'Genre' },
@@ -1578,6 +1597,27 @@ window.addEventListener("load", function() {
             this.$router.push('database');
           } else if (selected.text === 'Playlist') {
             this.$router.push('playlist');
+          } else if (selected.text === 'Preferred Mime') {
+            const mime = this.$state.getState('CONFIGURATION')['mimeType'];
+            const opts = [
+              { "text": "audio", "checked": mime === "audio" },
+              { "text": "audio/webm", "checked": mime === "audio/webm" },
+              { "text": "audio/mp4", "checked": mime === "audio/mp4" }
+            ];
+            const idx = opts.findIndex((opt) => {
+              return opt.text === mime;
+            });
+            this.$router.showSingleSelector('Preferred Mime', opts, 'Select', (selected) => {
+              const conf = this.$state.getState('CONFIGURATION');
+              conf['mimeType'] = selected.text;
+              localforage.setItem(DB_CONFIGURATION, conf)
+              .then(() => {
+                return localforage.getItem(DB_CONFIGURATION);
+              })
+              .then((CONFIGURATION) => {
+                this.$state.setState('CONFIGURATION', CONFIGURATION);
+              });
+            }, 'Cancel', null, undefined, idx);
           } else if (selected.text === 'Exit') {
             window.close();
           } else {
