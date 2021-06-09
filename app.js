@@ -908,35 +908,6 @@ window.addEventListener("load", function() {
           }, 100);
         }, 0);
       },
-      playAudio: function(obj) {
-        if (obj.url != null) {
-          console.log(obj.url);
-          miniPlayer(this.$router, obj.url, this.methods.renderSoftKeyLCR);
-        } else {
-          this.$router.showLoading();
-          getCachedURL(obj.id, obj.br)
-          .then((_url) => {
-            this.$router.hideLoading();
-            console.log("From Cached" ,_url);
-            miniPlayer(this.$router, _url, this.methods.renderSoftKeyLCR);
-          })
-          .catch((_err) => {
-            console.log(_err);
-            decryptSignature(obj.signatureCipher, obj.player)
-            .then((url) => {
-              cacheURL(obj, url);
-              console.log("From Server" ,url);
-              miniPlayer(this.$router, url, this.methods.renderSoftKeyLCR);
-            })
-            .catch((err) => {
-              console.log(err);
-            })
-            .finally(() => {
-              this.$router.hideLoading();
-            });
-          });
-        }
-      },
       search: function(q = '') {
         this.$router.showLoading();
         searchVideo(q)
@@ -1179,35 +1150,6 @@ window.addEventListener("load", function() {
             this.methods.renderSoftKeyLCR();
           }, 100);
         }, 0);
-      },
-      playAudio: function(obj) {
-        if (obj.url != null) {
-          console.log(obj.url);
-          miniPlayer(this.$router, obj.url, this.methods.renderSoftKeyLCR);
-        } else {
-          this.$router.showLoading();
-          getCachedURL(obj.id, obj.br)
-          .then((_url) => {
-            this.$router.hideLoading();
-            console.log("From Cached" ,_url);
-            miniPlayer(this.$router, _url, this.methods.renderSoftKeyLCR);
-          })
-          .catch((_err) => {
-            console.log(_err);
-            decryptSignature(obj.signatureCipher, obj.player)
-            .then((url) => {
-              cacheURL(obj, url);
-              console.log("From Server" ,url);
-              miniPlayer(this.$router, url, this.methods.renderSoftKeyLCR);
-            })
-            .catch((err) => {
-              console.log(err);
-            })
-            .finally(() => {
-              this.$router.hideLoading();
-            });
-          });
-        }
       },
       presentInPlaylist: function(video) {
         var presents = []
