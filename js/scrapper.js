@@ -129,7 +129,13 @@ function execute(id) {
     if (player_response.streamingData && player_response.streamingData.dashManifestUrl) {
       return xhr('GET', player_response.streamingData.dashManifestUrl, {}, {}, XHR_HEADER)
     } else if (player_response.streamingData && player_response.streamingData.adaptiveFormats) {
-      return Promise.resolve(player_response.streamingData);
+      return fallback(id)
+      .then((res) => {
+        player_response.streamingData.player = res.player;
+        player_response.streamingData.adaptiveFormatsFallback = res.adaptiveFormats;
+        return Promise.resolve(player_response.streamingData);
+      });
+      // return Promise.resolve(player_response.streamingData);
       // return fallback(id);
     } else {
       return fallback(id);
