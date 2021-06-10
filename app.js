@@ -1455,6 +1455,8 @@ window.addEventListener("load", function() {
       play_icon: '/icons/img/baseline_play_circle_filled_white_36dp.png',
       tx_tl: '0/0',
       duration: '00:00',
+      current_time: '00:00',
+      slider_value: 0,
     },
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
@@ -1514,7 +1516,9 @@ window.addEventListener("load", function() {
         const DURATION_SLIDER = document.getElementById('home_duration_slider');
         const CURRENT_TIME = document.getElementById('home_current_time');
         const currentTime = evt.target.currentTime;
-        CURRENT_TIME.innerHTML = convertTime(currentTime);
+        this.data.current_time = convertTime(currentTime);
+        CURRENT_TIME.innerHTML = this.data.current_time;
+        this.data.slider_value = currentTime;
         DURATION_SLIDER.value = currentTime;
       }
     },
