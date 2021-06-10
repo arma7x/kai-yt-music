@@ -1451,12 +1451,16 @@ window.addEventListener("load", function() {
       artist: 'UNKNOWN',
       album: 'UNKNOWN',
       genre: 'UNKNOWN',
+      album_art: '/icons/img/baseline_person_white_36dp.png',
       tx_tl: '0/0',
     },
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
       this.$router.setHeaderTitle('YT Music');
       MAIN_PLAYER.ontimeupdate = this.methods.ontimeupdate;
+      MAIN_PLAYER.onpause = this.methods.onpause;
+      MAIN_PLAYER.onplay = this.methods.onplay;
+
 
       this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
       this.methods.listenTracklistIdx(this.$state.getState('TRACKLIST_IDX'));
@@ -1469,8 +1473,23 @@ window.addEventListener("load", function() {
       this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
       this.$state.removeStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
       MAIN_PLAYER.ontimeupdate = null;
+      MAIN_PLAYER.onpause = null;
+      MAIN_PLAYER.onplay = null;
     },
     methods: {
+      centerText: function() {
+        if (MAIN_PLAYER.duration > 0 && !MAIN_PLAYER.paused) {
+          this.$router.setSoftKeyCenterText('PAUSE');
+        } else {
+          this.$router.setSoftKeyCenterText('PLAY');
+        }
+      },
+      onpause: function() {
+        this.$router.setSoftKeyCenterText('PLAY');
+      },
+      onplay: function() {
+        this.$router.setSoftKeyCenterText('PAUSE');
+      },
       listenTracklistIdx: function(val) {
         const T = TRACKLIST[val];
         if (T) {
@@ -1479,6 +1498,7 @@ window.addEventListener("load", function() {
             artist: T.artist || 'UNKNOWN',
             album: T.album || 'UNKNOWN',
             genre: T.genre || 'UNKNOWN',
+            album_art: `https://i.ytimg.com/vi/${T.id}/hqdefault.jpg`,
             tx_tl: `${(val + 1).toString()}/${TRACKLIST.length.toString()}`
           });
         }
@@ -1511,7 +1531,11 @@ window.addEventListener("load", function() {
             this.$state.setState('TRACKLIST_IDX', selected.idx);
             getURL(selected.idx);
           }
-        }, () => {}, this.$state.getState('TRACKLIST_IDX'));
+        }, () => {
+          setTimeout(() => {
+            this.methods.centerText();
+          }, 100);
+        }, this.$state.getState('TRACKLIST_IDX'));
       },
       center: function() {
         if (MAIN_PLAYER.duration > 0 && !MAIN_PLAYER.paused) {
@@ -1565,7 +1589,11 @@ window.addEventListener("load", function() {
           } else {
             console.log(selected.text);
           }
-        }, undefined, 0);
+        }, () => {
+          setTimeout(() => {
+            this.methods.centerText();
+          }, 100);
+        }, 0);
       }
     },
     dPadNavListener: {
