@@ -1452,7 +1452,9 @@ window.addEventListener("load", function() {
       album: 'UNKNOWN',
       genre: 'UNKNOWN',
       album_art: '/icons/img/baseline_person_white_36dp.png',
+      play_icon: '/icons/img/baseline_play_circle_filled_white_36dp.png',
       tx_tl: '0/0',
+      duration: '00:00',
     },
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
@@ -1461,13 +1463,13 @@ window.addEventListener("load", function() {
       MAIN_PLAYER.onpause = this.methods.onpause;
       MAIN_PLAYER.onplay = this.methods.onplay;
 
-
       this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
       this.methods.listenTracklistIdx(this.$state.getState('TRACKLIST_IDX'));
 
       this.$state.addStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
       this.methods.listenTrackDuration(this.$state.getState('TRACK_DURATION'));
 
+      this.methods.togglePlayIcon();
     },
     unmounted: function() {
       this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
@@ -1477,18 +1479,18 @@ window.addEventListener("load", function() {
       MAIN_PLAYER.onplay = null;
     },
     methods: {
-      centerText: function() {
+      togglePlayIcon: function() {
         if (MAIN_PLAYER.duration > 0 && !MAIN_PLAYER.paused) {
-          this.$router.setSoftKeyCenterText('PAUSE');
+          this.setData({ play_icon: '/icons/img/baseline_pause_circle_filled_white_36dp.png' });
         } else {
-          this.$router.setSoftKeyCenterText('PLAY');
+          this.setData({ play_icon: '/icons/img/baseline_play_circle_filled_white_36dp.png' });
         }
       },
       onpause: function() {
-        this.$router.setSoftKeyCenterText('PLAY');
+        this.setData({ play_icon: '/icons/img/baseline_play_circle_filled_white_36dp.png' });
       },
       onplay: function() {
-        this.$router.setSoftKeyCenterText('PAUSE');
+        this.setData({ play_icon: '/icons/img/baseline_pause_circle_filled_white_36dp.png' });
       },
       listenTracklistIdx: function(val) {
         const T = TRACKLIST[val];
@@ -1505,8 +1507,7 @@ window.addEventListener("load", function() {
       },
       listenTrackDuration: function(val) {
         const DURATION_SLIDER = document.getElementById('home_duration_slider');
-        const DURATION = document.getElementById('home_duration');
-        DURATION.innerHTML = convertTime(val);
+        this.setData({ duration: convertTime(val) });
         DURATION_SLIDER.setAttribute("max", val);
       },
       ontimeupdate: function(evt) {
@@ -1531,11 +1532,7 @@ window.addEventListener("load", function() {
             this.$state.setState('TRACKLIST_IDX', selected.idx);
             getURL(selected.idx);
           }
-        }, () => {
-          setTimeout(() => {
-            this.methods.centerText();
-          }, 100);
-        }, this.$state.getState('TRACKLIST_IDX'));
+        }, () => {}, this.$state.getState('TRACKLIST_IDX'));
       },
       center: function() {
         if (MAIN_PLAYER.duration > 0 && !MAIN_PLAYER.paused) {
@@ -1590,9 +1587,7 @@ window.addEventListener("load", function() {
             console.log(selected.text);
           }
         }, () => {
-          setTimeout(() => {
-            this.methods.centerText();
-          }, 100);
+          setTimeout(() => {}, 100);
         }, 0);
       }
     },
