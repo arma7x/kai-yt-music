@@ -1509,15 +1509,53 @@ window.addEventListener("load", function() {
       this.methods.listenTrackDuration(this.$state.getState('TRACK_DURATION'));
 
       this.methods.togglePlayIcon();
+
+      document.activeElement.addEventListener('keydown', this.methods.skipEvent);
     },
     unmounted: function() {
       this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
       this.$state.removeStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
+      document.activeElement.removeEventListener('keydown', this.methods.skipEvent);
       MAIN_PLAYER.ontimeupdate = null;
       MAIN_PLAYER.onpause = null;
       MAIN_PLAYER.onplay = null;
     },
     methods: {
+      skipEvent: function (evt) {
+        console.log(evt);
+        switch (evt.key) {
+          case '1':
+            var threshold = new Date().getTime() - LFT_DBL_CLICK_TH;
+            if (threshold > 0 && threshold <= 300) {
+              clearTimeout(LFT_DBL_CLICK_TIMER);
+              LFT_DBL_CLICK_TH = 0;
+              MAIN_PLAYER.currentTime -= 10;
+            } else {
+              LFT_DBL_CLICK_TH = new Date().getTime();
+              LFT_DBL_CLICK_TIMER = setTimeout(() => {
+                if (LFT_DBL_CLICK_TH !== 0) {
+                  LFT_DBL_CLICK_TH = 0;
+                }
+              }, 500);
+            }
+            break;
+          case '3':
+            var threshold = new Date().getTime() - RGT_DBL_CLICK_TH;
+            if (threshold > 0 && threshold <= 300) {
+              clearTimeout(RGT_DBL_CLICK_TIMER);
+              RGT_DBL_CLICK_TH = 0;
+              MAIN_PLAYER.currentTime += 10;
+            } else {
+              RGT_DBL_CLICK_TH = new Date().getTime();
+              RGT_DBL_CLICK_TIMER = setTimeout(() => {
+                if (RGT_DBL_CLICK_TH !== 0) {
+                  RGT_DBL_CLICK_TH = 0;
+                }
+              }, 500);
+            }
+            break;
+        }
+      },
       togglePlayIcon: function() {
         if (MAIN_PLAYER.duration > 0 && !MAIN_PLAYER.paused) {
           this.setData({ play_icon: '/icons/img/baseline_pause_circle_filled_white_36dp.png' });
@@ -1635,46 +1673,20 @@ window.addEventListener("load", function() {
         volumeUp(MAIN_PLAYER, this.$router);
       },
       arrowRight: function() {
-        var threshold = new Date().getTime() - RGT_DBL_CLICK_TH;
-        if (threshold > 0 && threshold <= 300) {
-          clearTimeout(RGT_DBL_CLICK_TIMER);
-          RGT_DBL_CLICK_TH = 0;
-          MAIN_PLAYER.currentTime += 10;
-        } else {
-          RGT_DBL_CLICK_TH = new Date().getTime();
-          RGT_DBL_CLICK_TIMER = setTimeout(() => {
-            if (RGT_DBL_CLICK_TH !== 0) {
-              const move = this.$state.getState('TRACKLIST_IDX') + 1;
-              if (TRACKLIST[move]) {
-                this.$state.setState('TRACKLIST_IDX', move);
-                getURL(move);
-              }
-              RGT_DBL_CLICK_TH = 0;
-            }
-          }, 500);
+        const move = this.$state.getState('TRACKLIST_IDX') + 1;
+        if (TRACKLIST[move]) {
+          this.$state.setState('TRACKLIST_IDX', move);
+          getURL(move);
         }
       },
       arrowDown: function() {
         volumeDown(MAIN_PLAYER, this.$router);
       },
       arrowLeft: function() {
-        var threshold = new Date().getTime() - LFT_DBL_CLICK_TH;
-        if (threshold > 0 && threshold <= 300) {
-          clearTimeout(LFT_DBL_CLICK_TIMER);
-          LFT_DBL_CLICK_TH = 0;
-          MAIN_PLAYER.currentTime -= 10;
-        } else {
-          LFT_DBL_CLICK_TH = new Date().getTime();
-          LFT_DBL_CLICK_TIMER = setTimeout(() => {
-            if (LFT_DBL_CLICK_TH !== 0) {
-              const move = this.$state.getState('TRACKLIST_IDX') - 1;
-              if (TRACKLIST[move]) {
-                this.$state.setState('TRACKLIST_IDX', move);
-                getURL(move);
-              }
-              LFT_DBL_CLICK_TH = 0;
-            }
-          }, 500);
+        const move = this.$state.getState('TRACKLIST_IDX') - 1;
+        if (TRACKLIST[move]) {
+          this.$state.setState('TRACKLIST_IDX', move);
+          getURL(move);
         }
       },
     },
