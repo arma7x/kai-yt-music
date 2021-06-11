@@ -212,9 +212,9 @@ function searchVideo(query = '', key, pageToken) {
             sectionLists = data.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents;
             parseJsonFormat(sectionLists, json);
           } else if (data.contents.twoColumnBrowseResultsRenderer) {
-            json["parser"] += ".original";
-            sectionLists = data.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.richGridRenderer.contents;
-            parseJsonFormat(sectionLists, json);
+            //json["parser"] += ".original";
+            //sectionLists = data.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.richGridRenderer.contents;
+            //parseJsonFormat(sectionLists, json);
           }
           resolve(json);
         }

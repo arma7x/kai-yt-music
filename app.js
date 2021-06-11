@@ -7,6 +7,11 @@ const DB_PLAYING = 'YT_PLAYING';
 const DB_CONFIGURATION = 'YT_CONFIGURATION';
 const DEFAULT_VOLUME = 0.02;
 
+var LFT_DBL_CLICK_TH = 0;
+var LFT_DBL_CLICK_TIMER = undefined;
+var RGT_DBL_CLICK_TH = 0;
+var RGT_DBL_CLICK_TIMER = undefined;
+
 if (navigator.mozAudioChannelManager) {
   navigator.mozAudioChannelManager.volumeControlChannel = 'content';
 }
@@ -220,6 +225,7 @@ window.addEventListener("load", function() {
   });
 
   function playDefaultCollection() {
+    TRACKLIST = [];
     localforage.removeItem(DB_PLAYING);
     state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
@@ -439,6 +445,36 @@ window.addEventListener("load", function() {
                 MINI_PLAYER.pause();
               } else {
                 MINI_PLAYER.play();
+              }
+              break
+            case 'ArrowLeft':
+              var threshold = new Date().getTime() - LFT_DBL_CLICK_TH;
+              if (threshold > 0 && threshold <= 300) {
+                clearTimeout(LFT_DBL_CLICK_TIMER);
+                LFT_DBL_CLICK_TH = 0;
+                MINI_PLAYER.currentTime -= 10;
+              } else {
+                LFT_DBL_CLICK_TH = new Date().getTime();
+                LFT_DBL_CLICK_TIMER = setTimeout(() => {
+                  if (LFT_DBL_CLICK_TH !== 0) {
+                    LFT_DBL_CLICK_TH = 0;
+                  }
+                }, 500);
+              }
+              break
+            case 'ArrowRight':
+              var threshold = new Date().getTime() - RGT_DBL_CLICK_TH;
+              if (threshold > 0 && threshold <= 300) {
+                clearTimeout(RGT_DBL_CLICK_TIMER);
+                RGT_DBL_CLICK_TH = 0;
+                MINI_PLAYER.currentTime += 10;
+              } else {
+                RGT_DBL_CLICK_TH = new Date().getTime();
+                RGT_DBL_CLICK_TIMER = setTimeout(() => {
+                  if (RGT_DBL_CLICK_TH !== 0) {
+                    RGT_DBL_CLICK_TH = 0;
+                  }
+                }, 500);
               }
               break
           }
@@ -1457,6 +1493,7 @@ window.addEventListener("load", function() {
       duration: '00:00',
       current_time: '00:00',
       slider_value: 0,
+      slider_max: 0,
     },
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
@@ -1508,9 +1545,7 @@ window.addEventListener("load", function() {
         }
       },
       listenTrackDuration: function(val) {
-        const DURATION_SLIDER = document.getElementById('home_duration_slider');
-        this.setData({ duration: convertTime(val) });
-        DURATION_SLIDER.setAttribute("max", val);
+        this.setData({ duration: convertTime(val), slider_max: val });
       },
       ontimeupdate: function(evt) {
         const DURATION_SLIDER = document.getElementById('home_duration_slider');
@@ -1600,20 +1635,46 @@ window.addEventListener("load", function() {
         volumeUp(MAIN_PLAYER, this.$router);
       },
       arrowRight: function() {
-        const move = this.$state.getState('TRACKLIST_IDX') + 1;
-        if (TRACKLIST[move]) {
-          this.$state.setState('TRACKLIST_IDX', move);
-          getURL(move);
+        var threshold = new Date().getTime() - RGT_DBL_CLICK_TH;
+        if (threshold > 0 && threshold <= 300) {
+          clearTimeout(RGT_DBL_CLICK_TIMER);
+          RGT_DBL_CLICK_TH = 0;
+          MAIN_PLAYER.currentTime += 10;
+        } else {
+          RGT_DBL_CLICK_TH = new Date().getTime();
+          RGT_DBL_CLICK_TIMER = setTimeout(() => {
+            if (RGT_DBL_CLICK_TH !== 0) {
+              const move = this.$state.getState('TRACKLIST_IDX') + 1;
+              if (TRACKLIST[move]) {
+                this.$state.setState('TRACKLIST_IDX', move);
+                getURL(move);
+              }
+              RGT_DBL_CLICK_TH = 0;
+            }
+          }, 500);
         }
       },
       arrowDown: function() {
         volumeDown(MAIN_PLAYER, this.$router);
       },
       arrowLeft: function() {
-        const move = this.$state.getState('TRACKLIST_IDX') - 1;
-        if (TRACKLIST[move]) {
-          this.$state.setState('TRACKLIST_IDX', move);
-          getURL(move);
+        var threshold = new Date().getTime() - LFT_DBL_CLICK_TH;
+        if (threshold > 0 && threshold <= 300) {
+          clearTimeout(LFT_DBL_CLICK_TIMER);
+          LFT_DBL_CLICK_TH = 0;
+          MAIN_PLAYER.currentTime -= 10;
+        } else {
+          LFT_DBL_CLICK_TH = new Date().getTime();
+          LFT_DBL_CLICK_TIMER = setTimeout(() => {
+            if (LFT_DBL_CLICK_TH !== 0) {
+              const move = this.$state.getState('TRACKLIST_IDX') - 1;
+              if (TRACKLIST[move]) {
+                this.$state.setState('TRACKLIST_IDX', move);
+                getURL(move);
+              }
+              LFT_DBL_CLICK_TH = 0;
+            }
+          }, 500);
         }
       },
     },
