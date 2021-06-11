@@ -460,7 +460,9 @@ window.addEventListener("load", function() {
               if (threshold > 0 && threshold <= 300) {
                 clearTimeout(LFT_DBL_CLICK_TIMER);
                 LFT_DBL_CLICK_TH = 0;
+                MINI_PLAYER.pause();
                 MINI_PLAYER.currentTime -= 10;
+                MINI_PLAYER.play();
               } else {
                 LFT_DBL_CLICK_TH = new Date().getTime();
                 LFT_DBL_CLICK_TIMER = setTimeout(() => {
@@ -475,7 +477,9 @@ window.addEventListener("load", function() {
               if (threshold > 0 && threshold <= 300) {
                 clearTimeout(RGT_DBL_CLICK_TIMER);
                 RGT_DBL_CLICK_TH = 0;
+                MINI_PLAYER.pause();
                 MINI_PLAYER.currentTime += 10;
+                MINI_PLAYER.play();
               } else {
                 RGT_DBL_CLICK_TH = new Date().getTime();
                 RGT_DBL_CLICK_TIMER = setTimeout(() => {
@@ -1536,7 +1540,9 @@ window.addEventListener("load", function() {
             if (threshold > 0 && threshold <= 300) {
               clearTimeout(LFT_DBL_CLICK_TIMER);
               LFT_DBL_CLICK_TH = 0;
+              MAIN_PLAYER.pause();
               MAIN_PLAYER.currentTime -= 10;
+              MAIN_PLAYER.play();
             } else {
               LFT_DBL_CLICK_TH = new Date().getTime();
               LFT_DBL_CLICK_TIMER = setTimeout(() => {
@@ -1551,7 +1557,9 @@ window.addEventListener("load", function() {
             if (threshold > 0 && threshold <= 300) {
               clearTimeout(RGT_DBL_CLICK_TIMER);
               RGT_DBL_CLICK_TH = 0;
+              MAIN_PLAYER.pause();
               MAIN_PLAYER.currentTime += 10;
+              MAIN_PLAYER.play();
             } else {
               RGT_DBL_CLICK_TH = new Date().getTime();
               RGT_DBL_CLICK_TIMER = setTimeout(() => {
