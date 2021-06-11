@@ -91,7 +91,7 @@ function getURLParam(key, target) {
 function cacheURL(obj, url) {
   var params = getURLParam('expire', url);
   if (params[0]) {
-    console.log(url);
+    // console.log(url);
     localforage.getItem(DB_CACHED_URLS)
     .then((cached) => {
       if (cached == null) {
@@ -172,6 +172,10 @@ window.addEventListener("load", function() {
     TRACKLIST_IDX: 0,
     TRACK_DURATION: 0,
   });
+
+  MAIN_PLAYER.onerror = (evt) => {
+    console.log('MAIN_PLAYER', evt);
+  };
 
   MAIN_PLAYER.onended = (e) => {
     const next = state.getState('TRACKLIST_IDX') + 1;
@@ -307,7 +311,7 @@ window.addEventListener("load", function() {
           }
         }
       });
-      console.log(MIME, obj);
+      // console.log(MIME, obj);
       if (obj) {
         playMainAudio(obj);
       }
@@ -316,27 +320,27 @@ window.addEventListener("load", function() {
 
   function playMainAudio(obj) {
     if (obj.url != null) {
-      console.log(obj.url);
+      // console.log(obj.url);
       MAIN_PLAYER.mozAudioChannelType = 'content';
       MAIN_PLAYER.src = obj.url;
       MAIN_PLAYER.play();
     } else {
       getCachedURL(obj.id, obj.br)
       .then((_url) => {
-        console.log("From Cached" ,_url);
+        // console.log("From Cached" ,_url);
         MAIN_PLAYER.mozAudioChannelType = 'content';
         MAIN_PLAYER.src = _url;
         MAIN_PLAYER.play();
       })
       .catch((_err) => {
-        console.log(_err);
+        // console.log(_err);
         if (router && router.loading) {
           router.showLoading();
         }
         decryptSignature(obj.signatureCipher, obj.player)
         .then((url) => {
           cacheURL(obj, url);
-          console.log("From Server" ,url);
+          // console.log("From Server" ,url);
           MAIN_PLAYER.mozAudioChannelType = 'content';
           MAIN_PLAYER.src = url;
           MAIN_PLAYER.play();
@@ -356,14 +360,14 @@ window.addEventListener("load", function() {
 
   function playMiniAudio(_this, obj) {
     if (obj.url != null) {
-      console.log(obj.url);
+      // console.log(obj.url);
       miniPlayer(_this.$router, obj.url, _this.methods.renderSoftKeyLCR);
     } else {
       _this.$router.showLoading();
       getCachedURL(obj.id, obj.br)
       .then((_url) => {
         _this.$router.hideLoading();
-        console.log("From Cached" ,_url);
+        // console.log("From Cached" ,_url);
         miniPlayer(_this.$router, _url, _this.methods.renderSoftKeyLCR);
       })
       .catch((_err) => {
@@ -371,7 +375,7 @@ window.addEventListener("load", function() {
         decryptSignature(obj.signatureCipher, obj.player)
         .then((url) => {
           cacheURL(obj, url);
-          console.log("From Server" ,url);
+          // console.log("From Server" ,url);
           miniPlayer(_this.$router, url, _this.methods.renderSoftKeyLCR);
         })
         .catch((err) => {
@@ -390,6 +394,10 @@ window.addEventListener("load", function() {
     MINI_PLAYER.volume = 1;
     MINI_PLAYER.mozAudioChannelType = 'content';
     MINI_PLAYER.src = url;
+
+    MINI_PLAYER.onerror = (evt) => {
+      console.log('MINI_PLAYER', evt);
+    };
 
     const miniPlayerDialog = Kai.createDialog('Mini Player', `
       <div>
@@ -494,12 +502,12 @@ window.addEventListener("load", function() {
 
         MINI_PLAYER.onpause = () => {
           $router.setSoftKeyCenterText('PLAY');
-          console.log('PLAY');
+          // console.log('PLAY');
         }
 
         MINI_PLAYER.onplay = () => {
           $router.setSoftKeyCenterText('PAUSE');
-          console.log('PAUSE');
+          // console.log('PAUSE');
         }
 
         MAIN_PLAYER.pause();
@@ -697,7 +705,7 @@ window.addEventListener("load", function() {
                           _tracklist.push(v.id);
                         }
                       });
-                      console.log(_tracklist);
+                      // console.log(_tracklist);
                       PLYLS[_selected.id].collections = _tracklist;
                       localforage.setItem(DB_PLAYLIST, PLYLS)
                       .then(() => {
@@ -922,13 +930,13 @@ window.addEventListener("load", function() {
               return -1;
             return 0;
           });
-          console.log(audio);
+          // console.log(audio);
           if (audio.length > 0) {
             this.methods.showPlayOption(audio);
           }
         })
         .catch((err) => {
-          console.log(err);
+          // console.log(err);
         })
         .finally(() => {
           this.$router.hideLoading();
@@ -937,7 +945,7 @@ window.addEventListener("load", function() {
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
           playMiniAudio(this, selected);
-          console.log(selected);
+          // console.log(selected);
         }, () => {
           setTimeout(() => {
             this.methods.renderSoftKeyLCR();
@@ -1165,7 +1173,7 @@ window.addEventListener("load", function() {
               return -1;
             return 0;
           });
-          console.log(audio);
+          // console.log(audio);
           if (audio.length > 0) {
             this.methods.showPlayOption(audio);
           }
@@ -1180,7 +1188,7 @@ window.addEventListener("load", function() {
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
           playMiniAudio(this, selected);
-          console.log(selected);
+          // console.log(selected);
         }, () => {
           setTimeout(() => {
             this.methods.renderSoftKeyLCR();
@@ -1522,7 +1530,6 @@ window.addEventListener("load", function() {
     },
     methods: {
       skipEvent: function (evt) {
-        console.log(evt);
         switch (evt.key) {
           case '1':
             var threshold = new Date().getTime() - LFT_DBL_CLICK_TH;
@@ -1661,7 +1668,7 @@ window.addEventListener("load", function() {
           } else if (selected.text === 'Exit') {
             window.close();
           } else {
-            console.log(selected.text);
+            // console.log(selected.text);
           }
         }, () => {
           setTimeout(() => {}, 100);
