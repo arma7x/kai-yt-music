@@ -29,6 +29,9 @@
     "browser": {
       "description": "Required for iframe"
     },
+    "device-storage:sdcard":{
+      "access": "readwrite"
+    },
     "systemXHR": {
       "description": "Required to load remote content"
     },

@@ -248,7 +248,7 @@ const Kai = (function() {
       });
       DOM.getElementsByTagName('input')[i].addEventListener('blur', (evt) => {
         if (this.$router)
-          this.$router.onInputFocus();
+          this.$router.onInputBlur();
       });
     }
     if (document.activeElement.tagName === 'INPUT' && this.$router) {

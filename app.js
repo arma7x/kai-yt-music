@@ -7,6 +7,26 @@ const DB_PLAYING = 'YT_PLAYING';
 const DB_CONFIGURATION = 'YT_CONFIGURATION';
 const DEFAULT_VOLUME = 0.02;
 
+const SDCARD = navigator.getDeviceStorage('sdcard');
+
+function saveDownload(blob, name, cb = () => {}) {
+  var mime = blob.type.split('/')[1];
+  var path = 'ytm';
+  if (SDCARD.storageName !== '') {
+    path = `/${SDCARD.storageName}/ytm`;
+  }
+  path = `${path}/${name}.${mime}`;
+  const addFile = SDCARD.addNamed(blob, path);
+  addFile.onsuccess = (evt) => {
+    cb(path);
+  }
+  addFile.onerror = (err) => {
+    console.log(err);
+    cb(false);
+  }
+  console.log(path);
+}
+
 var LFT_DBL_CLICK_TH = 0;
 var LFT_DBL_CLICK_TIMER = undefined;
 var RGT_DBL_CLICK_TH = 0;
@@ -283,6 +303,54 @@ window.addEventListener("load", function() {
     });
   }
 
+  function downloadAudio(id) {
+    return getVideoLinks(id)
+    .then((links) => {
+      if (router && router.loading) {
+        router.hideLoading();
+      }
+      var obj = null;
+      var quality = 0;
+      const MIME = state.getState('CONFIGURATION')['mimeType'] || 'audio';
+      links.forEach((link) => {
+        if (link.mimeType.indexOf(MIME) > -1) {
+          var br = parseInt(link.bitrate);
+          if (br > 999) {
+            br = Math.round(br/1000);
+          }
+          link.br = br;
+          if (link.br >= quality) {
+            obj = link;
+            quality = link.br;
+          }
+        }
+      });
+      return Promise.resolve(obj);
+    })
+    .then((obj) => {
+      if (obj.url != null) {
+        return Promise.resolve(obj.url);
+      } else {
+        return getCachedURL(obj.id, obj.br)
+        .then((_url) => {
+          return Promise.resolve(_url);
+        })
+        .catch((_err) => {
+          return decryptSignature(obj.signatureCipher, obj.player)
+          .then((url) => {
+            return Promise.resolve(url);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          })
+        });
+      }
+    })
+    .catch((e) => {
+      return Promise.reject(e);
+    });
+  }
+
   function getURL(idx) {
     if (TRACKLIST[idx] == null) {
       return
@@ -315,6 +383,9 @@ window.addEventListener("load", function() {
       if (obj) {
         playMainAudio(obj);
       }
+    })
+    .catch((e) => {
+      console.log(e);
     });
   }
 
@@ -816,7 +887,6 @@ window.addEventListener("load", function() {
                 var obj = {
                   id: video.id,
                   _title: video._title || video.title,
-                  album_art: video.thumbnail_src,
                   duration: video.duration,
                   title: false,
                   artist: false,
@@ -847,20 +917,63 @@ window.addEventListener("load", function() {
                     obj.year = JSON.parse(document.getElementById('track').value.trim());
                   } catch(e){}
                 }
-                DATABASE[video.id] = obj;
-                localforage.setItem(DB_NAME, DATABASE)
-                .then(() => {
-                  $router.showToast('Saved');
-                  $router.pop();
-                  return localforage.getItem(DB_NAME);
-                })
-                .then((UPDATED_DATABASE) => {
-                  state.setState('DATABASE', UPDATED_DATABASE);
-                })
-                .catch((err) => {
-                  console.log(err);
-                  $router.showToast(err.toString());
-                });
+
+                function exec(_obj) {
+                  DATABASE[video.id] = _obj;
+                  localforage.setItem(DB_NAME, DATABASE)
+                  .then(() => {
+                    $router.showToast('Saved');
+                    $router.pop();
+                    return localforage.getItem(DB_NAME);
+                  })
+                  .then((UPDATED_DATABASE) => {
+                    state.setState('DATABASE', UPDATED_DATABASE);
+                  })
+                  .catch((err) => {
+                    console.log(err);
+                    $router.showToast(err.toString());
+                  });
+                }
+
+                if (!isUpdate || video.local_path == null) {
+                  $router.showLoading();
+                  downloadAudio(video.id)
+                  .then((url) => {
+                    $router.hideLoading();
+                    $router.showLoading();
+                    const down = new XMLHttpRequest({ mozSystem: true });
+                    down.open('GET', url, true);
+                    down.responseType = 'blob';
+                    down.onload = (evt) => {
+                      saveDownload(evt.currentTarget.response, `${video.id}_${video.title}`, (localPath) => {
+                        if (localPath === false) {
+                          $router.showToast("Error SAVE");
+                        } else {
+                          obj.local_path = localPath;
+                          exec(obj);
+                        }
+                        $router.hideLoading();
+                      });
+                    }
+                    down.onprogress = (evt) => {
+                      if (evt.lengthComputable) {
+                        var percentComplete = evt.loaded / evt.total * 100;
+                        $router.showToast(`${percentComplete.toFixed(2)}%`);
+                      }
+                    }
+                    down.onerror = (err) => {
+                      $router.hideLoading();
+                      $router.showToast("Error DOWNLOAD");
+                    }
+                    down.send();
+                  })
+                  .catch((e) => {
+                    $router.hideLoading();
+                    $router.showToast("Error GET");
+                  });
+                } else {
+                  exec(obj);
+                }
               }
             },
             softKeyText: { left: '', center: '', right: '' },
