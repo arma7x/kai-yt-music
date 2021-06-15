@@ -355,38 +355,53 @@ window.addEventListener("load", function() {
     if (TRACKLIST[idx] == null) {
       return
     }
-    if (router && router.loading) {
-      router.showLoading();
-    }
-    getVideoLinks(TRACKLIST[idx].id)
-    .then((links) => {
+    if (TRACKLIST[idx].local_path) {
+      var request = SDCARD.get(TRACKLIST[idx].local_path);
+      request.onsuccess = (file) => {
+        MAIN_PLAYER.mozAudioChannelType = 'content';
+        MAIN_PLAYER.src = URL.createObjectURL(file.target.result);
+        MAIN_PLAYER.play();
+      }
+      request.onerror = ( error) => {
+        console.warn("Unable to get the file: " + error.toString());
+      }
+    } else {
       if (router && router.loading) {
-        router.hideLoading();
+        router.showLoading();
       }
-      var obj = null;
-      var quality = 0;
-      const MIME = state.getState('CONFIGURATION')['mimeType'] || 'audio';
-      links.forEach((link) => {
-        if (link.mimeType.indexOf(MIME) > -1) {
-          var br = parseInt(link.bitrate);
-          if (br > 999) {
-            br = Math.round(br/1000);
-          }
-          link.br = br;
-          if (link.br >= quality) {
-            obj = link;
-            quality = link.br;
-          }
+      getVideoLinks(TRACKLIST[idx].id)
+      .then((links) => {
+        if (router && router.loading) {
+          router.hideLoading();
         }
+        var obj = null;
+        var quality = 0;
+        const MIME = state.getState('CONFIGURATION')['mimeType'] || 'audio';
+        links.forEach((link) => {
+          if (link.mimeType.indexOf(MIME) > -1) {
+            var br = parseInt(link.bitrate);
+            if (br > 999) {
+              br = Math.round(br/1000);
+            }
+            link.br = br;
+            if (link.br >= quality) {
+              obj = link;
+              quality = link.br;
+            }
+          }
+        });
+        // console.log(MIME, obj);
+        if (obj) {
+          playMainAudio(obj);
+        }
+      })
+      .catch((e) => {
+        if (router && router.loading) {
+          router.hideLoading();
+        }
+        console.log(e);
       });
-      // console.log(MIME, obj);
-      if (obj) {
-        playMainAudio(obj);
-      }
-    })
-    .catch((e) => {
-      console.log(e);
-    });
+    }
   }
 
   function playMainAudio(obj) {
