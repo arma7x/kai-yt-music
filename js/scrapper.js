@@ -145,7 +145,8 @@ function execute(id) {
     return Promise.resolve(result);
   })
   .catch((e) => {
-    return Promise.reject(e);
+    return fallback(id);
+    // return Promise.reject(e);
   })
 }
 

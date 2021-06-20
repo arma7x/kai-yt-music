@@ -241,6 +241,7 @@ const KaiRouter = (function() {
       if (DOM.__kaikit__ != undefined && DOM.__kaikit__ instanceof Kai && DOM.__kaikit__.id === '__kai_bottom_sheet__') {
         DOM.__kaikit__.unmount();
         DOM.removeEventListener('click', DOM.__kaikit__.handleClick);
+        DOM.__kaikit__ = null;
       }
     }
     if (SK) {

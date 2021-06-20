@@ -342,9 +342,11 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
             selectCb(this.verticalNavIndex);
           }
         }
-        if (closeCb) {
-          closeCb();
-        }
+      }
+    },
+    unmounted: function() {
+      if (closeCb) {
+        closeCb();
       }
     },
     softKeyText: { left: '', center: selectText || 'SELECT', right: '' },
@@ -369,9 +371,6 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
       arrowLeft: function() {},
     },
     backKeyListener: function() {
-      if (closeCb) {
-        closeCb();
-      }
     }
   });
 }
@@ -393,9 +392,6 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
         if (typeof negativeCb === 'function') {
           negativeCb(dataCb);
         }
-        if (closeCb) {
-          closeCb();
-        }
       },
       center: function() {
         if ($router) {
@@ -403,9 +399,6 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
         }
         if (typeof neutralCb === 'function') {
           neutralCb(dataCb);
-        }
-        if (closeCb) {
-          closeCb();
         }
       },
       right: function() {
@@ -415,15 +408,14 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
         if (typeof positiveCb === 'function') {
           positiveCb(dataCb);
         }
-        if (closeCb) {
-          closeCb();
-        }
       }
     },
-    backKeyListener: function() {
+    unmounted: function() {
       if (closeCb) {
         closeCb();
       }
+    },
+    backKeyListener: function() {
     }
   });
 }
@@ -455,7 +447,7 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
           {{#options}}\
             <li class="optSSNav" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
-                {{text}}\
+                <span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
                   <label class="radio"><input type="radio" name="radio" checked><span></span></label>\
                 {{/checked}}\
@@ -482,9 +474,6 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
             selectCb(this.verticalNavIndex);
           }
         }
-        if (closeCb) {
-          closeCb();
-        }
       }
     },
     softKeyText: { left: cancelText || 'Cancel', center: selectText || 'SELECT', right: '' },
@@ -496,9 +485,6 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
         if (typeof cancelCb === 'function') {
           cancelCb(data);
         }
-        if (closeCb) {
-          closeCb();
-        }
       },
       center: function() {
         const listNav = document.querySelectorAll(this.verticalNavClass);
@@ -507,6 +493,11 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
         }
       },
       right: function() {}
+    },
+    unmounted: function() {
+      if (closeCb) {
+        closeCb();
+      }
     },
     dPadNavListener: {
       arrowUp: function() {
@@ -519,9 +510,6 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
       arrowLeft: function() {},
     },
     backKeyListener: function() {
-      if (closeCb) {
-        closeCb();
-      }
     }
   });
 }
@@ -592,9 +580,6 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
             selectCb(this.verticalNavIndex);
           }
         }
-        if (closeCb) {
-          closeCb();
-        }
       }
     },
     softKeyText: { left: cancelText || 'Cancel', center: selectText || 'SELECT', right: saveText || 'Save' },
@@ -605,9 +590,6 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
         }
         if (typeof cancelCb === 'function') {
           cancelCb(data);
-        }
-        if (closeCb) {
-          closeCb();
         }
       },
       center: function() {
@@ -623,9 +605,11 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
         if (typeof saveCb === 'function') {
           saveCb(this.data.options);
         }
-        if (closeCb) {
-          closeCb();
-        }
+      }
+    },
+    unmounted: function() {
+      if (closeCb) {
+        closeCb();
       }
     },
     dPadNavListener: {
@@ -655,9 +639,6 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
       arrowLeft: function() {},
     },
     backKeyListener: function() {
-      if (closeCb) {
-        closeCb();
-      }
     }
   });
   return multi_selector.reset();
@@ -714,7 +695,11 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
     mounted: function() {
       this.methods.focus();
     },
-    unmounted: function() {},
+    unmounted: function() {
+      if (closeCb) {
+        closeCb();
+      }
+    },
     methods: {
       focus: function() {
         if (this.data.selector === 0) {
@@ -774,9 +759,6 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
         if ($router) {
           $router.hideDatePicker();
         }
-        if (closeCb) {
-          closeCb();
-        }
       },
       center: function() {
         if ($router) {
@@ -784,9 +766,6 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
         }
         if (typeof selectCb === 'function') {
           selectCb(new Date(this.data.yearM, MONTHS.indexOf(this.data.monthM), this.data.dayM));
-        }
-        if (closeCb) {
-          closeCb();
         }
       },
       right: function() {}
@@ -816,9 +795,6 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
       }
     },
     backKeyListener: function() {
-      if (closeCb) {
-        closeCb();
-      }
     }
   });
 }
@@ -910,7 +886,11 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
     mounted: function() {
       this.methods.focus();
     },
-    unmounted: function() {},
+    unmounted: function() {
+      if (closeCb) {
+        closeCb();
+      }
+    },
     methods: {
       focus: function() {
         if (this.data.selector === 0) {
@@ -968,9 +948,6 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
         if ($router) {
           $router.hideTimePicker();
         }
-        if (closeCb) {
-          closeCb();
-        }
       },
       center: function() {
         if ($router) {
@@ -987,9 +964,6 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
           const dt = new Date();
           dt.setHours(h, m, 0);
           selectCb(dt);
-        }
-        if (closeCb) {
-          closeCb();
         }
       },
       right: function() {}
@@ -1019,9 +993,6 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
       }
     },
     backKeyListener: function() {
-      if (closeCb) {
-        closeCb();
-      }
     }
   });
 }
