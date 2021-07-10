@@ -41,7 +41,8 @@
     "audio-channel-content": {
       "description": "To play audio in background"
     },
-    "volumemanager": {}
+    "volumemanager": {},
+    "tcp-socket": {}
   },
   "locales": {
     "en-US": {
