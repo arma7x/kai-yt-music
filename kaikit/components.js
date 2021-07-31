@@ -310,6 +310,13 @@ Kai.createToast = function(EL) {
 }
 
 Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, verticalNavIndex = -1, $router) {
+
+  var tabIndex = document.querySelectorAll("[tabIndex").length;
+  options.forEach((opt) => {
+    opt['_tabIndex'] = tabIndex;
+    tabIndex += 1;
+  });
+
   return new Kai({
     name: 'option_menu',
     data: {
@@ -324,7 +331,7 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
       <div class="kui-option-body">\
         <ul id="kui-options" class="kui-options">\
           {{#options}}\
-            <li class="optMenuNav" @click=\'selectOption({{__stringify__}})\'>{{text}}{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}</li>\
+            <li class="optMenuNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>{{text}}{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}</li>\
           {{/options}}\
         </ul>\
       </div>\
@@ -422,6 +429,12 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
 
 Kai.createSingleSelector = function(title, options, selectText, selectCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
 
+  var tabIndex = document.querySelectorAll("[tabIndex").length;
+  options.forEach((opt) => {
+    opt['_tabIndex'] = tabIndex;
+    tabIndex += 1;
+  });
+
   options = JSON.parse(JSON.stringify(options));
   options.forEach(function(v,k) {
     if (k === verticalNavIndex) {
@@ -445,7 +458,7 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
       <div class="kui-option-body">\
         <ul id="kui-options" class="kui-options">\
           {{#options}}\
-            <li class="optSSNav" @click=\'selectOption({{__stringify__}})\'>\
+            <li class="optSSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
                 <span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
@@ -516,6 +529,12 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
 
 Kai.createMultiSelector = function(title, options, selectText, selectCb, saveText, saveCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
 
+  var tabIndex = document.querySelectorAll("[tabIndex").length;
+  options.forEach((opt) => {
+    opt['_tabIndex'] = tabIndex;
+    tabIndex += 1;
+  });
+
   options = JSON.parse(JSON.stringify(options));
   const focus = options[verticalNavIndex === -1 ? 0 : verticalNavIndex];
   if (focus) {
@@ -540,7 +559,7 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
       <div class="kui-option-body">\
         <ul id="kui-options" class="kui-options">\
           {{#options}}\
-            <li class="optMSNav" @click=\'selectOption({{__stringify__}})\'>\
+            <li class="optMSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
                 <span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\

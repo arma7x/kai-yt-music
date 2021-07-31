@@ -79,7 +79,7 @@ const KaiState = (function() {
         listener(this.state[name]);
       });
       this.globalListener.forEach((listener) => {
-        listener(this.state[name]);
+        listener(name, this.state[name]);
       });
       return this.immutability(data);
     } else {
