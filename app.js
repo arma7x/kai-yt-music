@@ -12,7 +12,7 @@ const EQL_PRESENT={Classical:{hz60:33,hz170:33,hz310:33,hz600:33,hz1000:33,hz300
 
 const RANGE={"0":33,"1":35,"2":38,"3":40,"4":43,"5":46,"6":48,"7":51,"8":53,"9":56,"10":58,"11":61,"12":64,"-12":2,"-11":5,"-10":7,"-9":10,"-8":12,"-7":15,"-6":17,"-5":20,"-4":23,"-3":25,"-2":28,"-1":30};
 
-var EQUALIZER = {hz60:0,hz170:0,hz310:0,hz600:0,hz1000:0,hz3000:0,hz6000:0,hz12000:0,hz14000:0,hz16000:0,preamp:0};
+var EQUALIZER = {preamp:0,hz60:0,hz170:0,hz310:0,hz600:0,hz1000:0,hz3000:0,hz6000:0,hz12000:0,hz14000:0,hz16000:0};
 
 const SDCARD = navigator.getDeviceStorage('sdcard');
 
@@ -347,12 +347,6 @@ window.addEventListener("load", function() {
     }
   });
 
-  //setTimeout(() => {
-  //  loadEq("Full Bass")
-  //}, 5000);
-  //setTimeout(disableEq, 5000);
-  //setTimeout(enableEq, 7000);
-
   const state = new KaiState({
     CONFIGURATION: {},
     DATABASE: {},
@@ -661,6 +655,57 @@ window.addEventListener("load", function() {
       });
     }
   }
+
+  const equalizer_panel = new Kai({
+    name: '_equalizer_panel_',
+    data: {
+      title: '_equalizer_panel_',
+      filters: []
+    },
+    verticalNavClass: '.equalizerPanelNav',
+    templateUrl: document.location.origin + '/templates/equalizer_panel.html',
+    mounted: function() {
+      this.$router.setHeaderTitle('Equalizer Panel');
+      const filters = []
+      for (var x in EQUALIZER) {
+        filters.push({ name: x, value: EQUALIZER[x] });
+      }
+      this.setData({ filters: filters });
+      console.log(this.data.filters);
+    },
+    unmounted: function() {},
+    methods: {},
+    softKeyText: { left: '', center: '', right: '' },
+    softKeyListener: {
+      left: function() {},
+      center: function() {},
+      right: function() {}
+    },
+    dPadNavListener: {
+      arrowUp: function() {
+        this.navigateListNav(-1);
+      },
+      arrowDown: function() {
+        this.navigateListNav(1);
+      },
+      arrowLeft: function() {
+        const cur = this.data.filters[this.verticalNavIndex];
+        if (!cur ||  cur.value === -12)
+          return
+        this.data.filters[this.verticalNavIndex].value = cur.value - 1
+        this.render();
+        toggleEq(cur.name, this.data.filters[this.verticalNavIndex].value);
+      },
+      arrowRight: function() {
+        const cur = this.data.filters[this.verticalNavIndex];
+        if (!cur ||  cur.value === 12)
+          return
+        this.data.filters[this.verticalNavIndex].value = cur.value + 1
+        this.render();
+        toggleEq(cur.name, this.data.filters[this.verticalNavIndex].value);
+      }
+    }
+  });
 
   const miniPlayer = function($router, url, cb = () => {}) {
 
@@ -1956,6 +2001,7 @@ window.addEventListener("load", function() {
           { text: 'Playlist' },
           { text: 'Preferred Mime' },
           { text: 'Built-in Equalizer' },
+          { text: 'Equalizer Panel' },
           // { text: 'Artist' },
           // { text: 'Album' },
           // { text: 'Genre' },
@@ -2004,6 +2050,8 @@ window.addEventListener("load", function() {
                 loadEq(selected.text)
               }, 'Cancel', null, undefined, idx);
             });
+          } else if (selected.text === 'Equalizer Panel') {
+            this.$router.push('equalizer_panel');
           } else if (selected.text === 'Exit') {
             window.close();
           } else {
@@ -2059,6 +2107,10 @@ window.addEventListener("load", function() {
       'playlist': {
         name: 'playlist',
         component: playlist
+      },
+      'equalizer_panel': {
+        name: 'equalizer_panel',
+        component: equalizer_panel
       },
     }
   });
