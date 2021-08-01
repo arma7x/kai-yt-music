@@ -189,6 +189,7 @@ window.addEventListener("load", function() {
 
   var TRACK_NAME = '';
   var TRACKLIST = [];
+  var _TRACKLIST = [];
 
   const MAIN_PLAYER = document.createElement("audio");
   MAIN_PLAYER.volume = 1;
@@ -362,10 +363,24 @@ window.addEventListener("load", function() {
   };
 
   MAIN_PLAYER.onended = (e) => {
-    const next = state.getState('TRACKLIST_IDX') + 1;
-    if (TRACKLIST[next]) {
-      state.setState('TRACKLIST_IDX', next);
-      playVideoByID(next);
+    const REPEAT = state.getState('REPEAT');
+    if (REPEAT === 1) {
+      MAIN_PLAYER.play();
+    } else if (REPEAT === 0) {
+      const next = state.getState('TRACKLIST_IDX') + 1;
+      if (TRACKLIST[next]) {
+        state.setState('TRACKLIST_IDX', next);
+        playVideoByID(next);
+      } else {
+        state.setState('TRACKLIST_IDX', 0);
+        playVideoByID(0);
+      }
+    } else if (REPEAT === -1 && (state.getState('TRACKLIST_IDX') !== (TRACKLIST.length - 1))) {
+      const next = state.getState('TRACKLIST_IDX') + 1;
+      if (TRACKLIST[next]) {
+        state.setState('TRACKLIST_IDX', next);
+        playVideoByID(next);
+      }
     }
   }
 
@@ -374,10 +389,7 @@ window.addEventListener("load", function() {
   }
 
   function toggleShuffle($router) {
-    SHUFFLE = !state.getState('SHUFFLE');
-    if (SHUFFLE) {
-      // shuffling();
-    }
+    const SHUFFLE = !state.getState('SHUFFLE');
     const SHUFFLE_BTN = {};
     if (SHUFFLE) {
       SHUFFLE_BTN.classList = '';
@@ -390,11 +402,40 @@ window.addEventListener("load", function() {
     }
     state.setState('SHUFFLE', SHUFFLE);
     localforage.setItem('SHUFFLE', SHUFFLE);
+    shuffling();
     return SHUFFLE_BTN;
   }
 
+  function shuffling() {
+    const SHUFFLE = state.getState('SHUFFLE');
+    if (SHUFFLE) {
+      const v_id = TRACKLIST[state.getState('TRACKLIST_IDX')].id;
+      for (var i = 0; i < TRACKLIST.length - 1; i++) {
+        var j = i + Math.floor(Math.random() * (TRACKLIST.length - i));
+        var temp = TRACKLIST[j];
+        TRACKLIST[j] = TRACKLIST[i];
+        TRACKLIST[i] = temp;
+      }
+      const idx = TRACKLIST.findIndex((t) => {
+        return t.id === v_id;
+      });
+      const t = TRACKLIST[0];
+      const b =  TRACKLIST[idx];
+      TRACKLIST[idx] = t;
+      TRACKLIST[0] = b;
+      state.setState('TRACKLIST_IDX', 0);
+    } else {
+      const v_id = TRACKLIST[state.getState('TRACKLIST_IDX')].id;
+      TRACKLIST = JSON.parse(JSON.stringify(_TRACKLIST));
+      const idx = TRACKLIST.findIndex((t) => {
+        return t.id === v_id;
+      });
+      state.setState('TRACKLIST_IDX', idx);
+    }
+  }
+
   function toggleRepeat($router) {
-    REPEAT = state.getState('REPEAT');
+    var REPEAT = state.getState('REPEAT');
     REPEAT++;
     const REPEAT_BTN = {};
     if (REPEAT === 0) {
@@ -449,13 +490,20 @@ window.addEventListener("load", function() {
     state.setState('PLAYLIST', PLAYLIST);
   });
 
-  localforage.getItem(DB_PLAYING)
-  .then((playlist_id) => {
-    if (playlist_id == null) {
-      playDefaultCollection();
-    } else {
-      playPlaylistCollection(playlist_id);
-    }
+  localforage.getItem('SHUFFLE')
+  .then((SHUFFLE) => {
+    if (SHUFFLE == null)
+      SHUFFLE = false;
+    state.setState('SHUFFLE', SHUFFLE);
+    localforage.setItem('SHUFFLE', SHUFFLE);
+    localforage.getItem(DB_PLAYING)
+    .then((playlist_id) => {
+      if (playlist_id == null) {
+        playDefaultCollection();
+      } else {
+        playPlaylistCollection(playlist_id);
+      }
+    });
   });
 
   function playDefaultCollection() {
@@ -467,7 +515,9 @@ window.addEventListener("load", function() {
     .then((tracks) => {
       for (var y in tracks) {
         TRACKLIST.push(tracks[y]);
+        _TRACKLIST.push(tracks[y]);
       }
+      shuffling();
       playVideoByID(state.getState('TRACKLIST_IDX'));
     });
   }
@@ -502,6 +552,8 @@ window.addEventListener("load", function() {
           state.setState('TRACKLIST_IDX', 0);
           TRACK_NAME = PLYLST.name;
           TRACKLIST = collections;
+          _TRACKLIST = JSON.parse(JSON.stringify(collections));
+          shuffling();
           playVideoByID(state.getState('TRACKLIST_IDX'));
           router.showToast(`PLAYING ${TRACK_NAME}`);
           localforage.setItem(DB_PLAYING, PLYLST.id);
@@ -1945,17 +1997,11 @@ window.addEventListener("load", function() {
         }
       });
 
-      localforage.getItem('SHUFFLE')
-      .then((SHUFFLE) => {
-        if (!SHUFFLE)
-          SHUFFLE = false;
-        state.setState('SHUFFLE', SHUFFLE);
-        localforage.setItem('SHUFFLE', SHUFFLE);
-        if (SHUFFLE)
-          this.setData({ shuffle_class: '' });
-        else
-          this.setData({ shuffle_class: 'inactive' });
-      });
+      const SHUFFLE = this.$state.getState('SHUFFLE');
+      if (SHUFFLE)
+        this.setData({ shuffle_class: '' });
+      else
+        this.setData({ shuffle_class: 'inactive' });
 
     },
     unmounted: function() {
