@@ -136,7 +136,7 @@ h1, h2, h3, h4, h5, ul, p {
 }
 
 .statusbar-placeholder {
-    background-color: #000000;
+    background-color: #320374;
     height: 26px;
 }
 
@@ -321,7 +321,7 @@ h1, h2, h3, h4, h5, ul, p {
 .kui-header {
     height: 28px;
     line-height: 28px;
-    background-color: #000000;
+    background-color: #320374;
     color: #fff;
     text-align: center;
     vertical-align: middle;
@@ -509,7 +509,7 @@ h1, h2, h3, h4, h5, ul, p {
 .checkbox input + span::after, .radio input + span::after {
   font-size: 20px;
   font-weight: normal;
-  color: #000000;
+  color: #873eff;
 }
 
 /* ============== List ============== */
@@ -553,7 +553,7 @@ h1, h2, h3, h4, h5, ul, p {
 }
 
 .kui-list li.focus {
-    background-color: #000000;
+    background-color: #873eff;
     outline: 0;
     color: #fff;
     white-space: nowrap;
@@ -564,7 +564,7 @@ h1, h2, h3, h4, h5, ul, p {
 .kui-list .focus button.kui-btn {
     outline: 0;
     color: #fff;
-    background-color: #000000;
+    background-color: #873eff;
 }
 
 .kui-list li:focus .kui-pri,
@@ -620,7 +620,7 @@ h1, h2, h3, h4, h5, ul, p {
 .kui-options li:focus {
     outline: 0;
     color: #fff;
-    background-color: #000000;
+    background-color: #873eff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -629,14 +629,14 @@ h1, h2, h3, h4, h5, ul, p {
 .kui-options li.focus {
     outline: 0;
     color: #fff;
-    background-color: #000000;
+    background-color: #873eff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .kui-options li.focus .radio input:checked + span, .kui-options li.focus .checkbox input:checked + span  {
-  background: #000000;
+  background: #873eff;
 }
 
 .kui-options li.focus .radio input + span::after, .kui-options li.focus .checkbox input + span::after {
@@ -660,7 +660,7 @@ button.kui-btn {
 button.kui-btn:focus {
     outline: 0;
     color: #fff;
-    background-color: #000000;
+    background-color: #873eff;
 }
 
 /* ============== Input ============== */
@@ -673,7 +673,7 @@ button.kui-btn:focus {
 }
 
 .kui-input-holder.kui-focus-within {
-    background-color: #000000;
+    background-color: #873eff;
     outline: 0;
 }
 
@@ -710,7 +710,7 @@ button.kui-btn:focus {
 .kui-table,
 .kui-table th,
 .kui-table td {
-    border: 1px solid #000000;
+    border: 1px solid #320374;
     border-collapse: collapse;
 }
 
@@ -719,13 +719,13 @@ button.kui-btn:focus {
 }
 
 .kui-table thead {
-    background-color: #000000;
+    background-color: #320374;
     color: #fff;
 }
 
 .kui-table tr:focus {
     outline: 0;
-    background-color: #000000;
+    background-color: #873eff;
     color: #fff;
 }
 
@@ -786,7 +786,7 @@ button.kui-btn:focus {
 .progress input::-moz-range-track {
     -moz-appearance: none;
     appearance: none;
-    background: #000000;
+    background: #873eff;
 }
 
 /* KaiOS portrait devices (240x320) */
@@ -862,13 +862,13 @@ button.kui-btn:focus {
 .kui-tab li.focus {
     outline: 0;
     color: #000;
-    border-bottom: 3px solid #000000;
+    border-bottom: 3px solid #873eff;
 }
 
 .kui-tab li:focus {
     outline: 0;
     color: #000;
-    border-bottom: 3px solid #000000;
+    border-bottom: 3px solid #873eff;
 }
 
 .kui-date-hidden {
@@ -876,7 +876,7 @@ button.kui-btn:focus {
 }
 
 .kai-focus {
-    background-color: #000000;
+    background-color: #873eff;
     color: #fff!important;
 }
 
@@ -980,7 +980,7 @@ button.kui-btn:focus {
 }
 
 .kai-lcr-mid {
-  color:#000000;font-size:20px;padding:15px 0;
+  color:#873eff;font-size:20px;padding:15px 0;
 }
 
 .kai-lcr-bottom {
@@ -1011,7 +1011,7 @@ button.kui-btn:focus {
 
 .break{
   position:absolute;
-  background:#000000;
+  background:#320374;
   width:2%;
   height:4px;
 }

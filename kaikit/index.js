@@ -206,7 +206,7 @@ const Kai = (function() {
     }
     this.isMounted = true;
 
-    var tabIndex = document.querySelectorAll("[tabIndex").length;
+    var tabIndex = document.getElementById('__kai_router__') ? document.getElementById('__kai_router__').querySelectorAll("[tabIndex").length : document.querySelectorAll("[tabIndex").length;
     const LIS = document.querySelectorAll(this.verticalNavClass);
     for (var LI in LIS) {
       if (LIS[LI].setAttribute) {

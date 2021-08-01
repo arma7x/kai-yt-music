@@ -242,7 +242,6 @@ const KaiRouter = (function() {
         DOM.__kaikit__.unmount();
         DOM.removeEventListener('click', DOM.__kaikit__.handleClick);
         DOM.__kaikit__ = null;
-        DOM.innerHTML = '';
       }
     }
     if (SK) {
