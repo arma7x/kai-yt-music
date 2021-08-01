@@ -353,6 +353,8 @@ window.addEventListener("load", function() {
     PLAYLIST: {},
     TRACKLIST_IDX: 0,
     TRACK_DURATION: 0,
+    REPEAT: -1,
+    SHUFFLE: false,
   });
 
   MAIN_PLAYER.onerror = (evt) => {
@@ -369,6 +371,52 @@ window.addEventListener("load", function() {
 
   MAIN_PLAYER.onloadedmetadata = (evt) => {
     state.setState('TRACK_DURATION', evt.target.duration);
+  }
+
+  function toggleShuffle($router) {
+    SHUFFLE = !state.getState('SHUFFLE');
+    if (SHUFFLE) {
+      // shuffling();
+    }
+    const SHUFFLE_BTN = {};
+    if (SHUFFLE) {
+      SHUFFLE_BTN.classList = '';
+      if ($router)
+        $router.showToast('Shuffle On');
+    } else {
+      SHUFFLE_BTN.classList = 'inactive';
+      if ($router)
+        $router.showToast('Shuffle Off');
+    }
+    state.setState('SHUFFLE', SHUFFLE);
+    localforage.setItem('SHUFFLE', SHUFFLE);
+    return SHUFFLE_BTN;
+  }
+
+  function toggleRepeat($router) {
+    REPEAT = state.getState('REPEAT');
+    REPEAT++;
+    const REPEAT_BTN = {};
+    if (REPEAT === 0) {
+      REPEAT_BTN.src = '/icons/img/baseline_repeat_white_18dp.png';
+      REPEAT_BTN.classList = '';
+      if ($router)
+        $router.showToast('Repeat On');
+    } else if (REPEAT === 1) {
+      REPEAT_BTN.src = '/icons/img/baseline_repeat_one_white_18dp.png';
+      REPEAT_BTN.classList = '';
+      if ($router)
+        $router.showToast('Repeat One');
+    } else {
+      REPEAT = -1;
+      REPEAT_BTN.src = '/icons/img/baseline_repeat_white_18dp.png';
+      REPEAT_BTN.classList = 'inactive';
+      if ($router)
+        $router.showToast('Repeat Off');
+    }
+    state.setState('REPEAT', REPEAT);
+    localforage.setItem('REPEAT', REPEAT);
+    return REPEAT_BTN;
   }
 
   localforage.getItem(DB_CONFIGURATION)
@@ -517,7 +565,6 @@ window.addEventListener("load", function() {
     if (TRACKLIST[idx] == null) {
       return
     }
-    console.log(TRACKLIST[idx]);
     if (TRACKLIST[idx].local_path) {
       var request = SDCARD.get(TRACKLIST[idx].local_path);
       request.onsuccess = (file) => {
@@ -1867,6 +1914,9 @@ window.addEventListener("load", function() {
       current_time: '00:00',
       slider_value: 0,
       slider_max: 0,
+      repeat_class: 'inactive',
+      repeat_icon: '/icons/img/baseline_repeat_white_18dp.png',
+      shuffle_class: 'inactive',
     },
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
@@ -1884,6 +1934,29 @@ window.addEventListener("load", function() {
       this.methods.togglePlayIcon();
 
       document.activeElement.addEventListener('keydown', this.methods.skipEvent);
+
+      localforage.getItem('REPEAT')
+      .then((val) => {
+        if (val != null) {
+          var REPEAT = val - 1;
+          this.$state.setState('REPEAT', REPEAT);
+          var style = toggleRepeat();
+          this.setData({ repeat_class: style.classList, repeat_icon: style.src });
+        }
+      });
+
+      localforage.getItem('SHUFFLE')
+      .then((SHUFFLE) => {
+        if (!SHUFFLE)
+          SHUFFLE = false;
+        state.setState('SHUFFLE', SHUFFLE);
+        localforage.setItem('SHUFFLE', SHUFFLE);
+        if (SHUFFLE)
+          this.setData({ shuffle_class: '' });
+        else
+          this.setData({ shuffle_class: 'inactive' });
+      });
+
     },
     unmounted: function() {
       this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
@@ -1929,6 +2002,14 @@ window.addEventListener("load", function() {
                 }
               }, 500);
             }
+            break;
+          case '*':
+            var style = toggleRepeat(this.$router);
+            this.setData({ repeat_class: style.classList, repeat_icon: style.src });
+            break;
+          case '#':
+            var style = toggleShuffle(this.$router);
+            this.setData({ shuffle_class: style.classList });
             break;
         }
       },

@@ -31,6 +31,10 @@
       0%   { transform: translate(0, 0); }
       100% { transform: translate(-100%, 0); }
     }
+    .inactive {
+      -webkit-filter: opacity(.4);
+      filter: opacity(.4);
+    }
   </style>
   <div class="kai-container" style="margin:5px;">
     <div>
@@ -39,7 +43,7 @@
       </h3>
     </div>
     <div class="kui-row-center" style="margin-top:5px;justify-content:start;">
-      <div style="width:35%;height:78.75px;background:#ccc;display:flex;flex-direction:column;justify-content:center;align-items: center;">
+      <div style="border:1px solid #ff0000;width:35%;height:78.75px;background:#ccc;display:flex;flex-direction:column;justify-content:center;align-items: center;">
         <img id="album_cover" height="100%" width="100%" style="object-fit:cover;" src="{{ album_art }}" />
       </div>
       <div style="width:65%;height:78.75px;padding:0px 0px 0px 5px;justify-content:flex-end;overflow:hidden;">
@@ -55,12 +59,20 @@
           <img width="15xp" height="15xp" src="/icons/img/baseline_music_note_white_36dp.png"/>
           <pre style="padding-left:5px;">{{ genre }}</pre>
         </div>
-        <div class="kui-row-center" style="justify-content:start;">
-          <img width="15xp" height="15xp" src="/icons/img/baseline_playlist_play_white_36dp.png"/>
+      </div>
+    </div>
+
+    <div class="kui-row-center" style="margin-top:10px">
+      <img class="{{ repeat_class }}" style="padding-right:5px;" width="16px" height="16px" src="{{ repeat_icon }}"/>
+      <img class="{{ shuffle_class }}" style="padding-right:5px;" width="16px" height="16px" src="/icons/img/baseline_shuffle_white_18dp.png"/>
+      <div style="width:100px;text-align:right;">
+        <div class="kui-row-center" style="justify-content:end;">
+          <img width="16xp" height="16xp" src="/icons/img/baseline_playlist_play_white_36dp.png"/>
           <pre style="padding-left:5px;">{{ tx_tl }}</pre>
         </div>
       </div>
     </div>
+
     <div style="margin-top:5px">
       <input id="home_duration_slider" style="width:100%" value="{{ slider_value }}" type="range" min="0" max="{{ slider_max }}" disabled/>
     </div>
