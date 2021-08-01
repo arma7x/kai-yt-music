@@ -323,15 +323,21 @@ window.addEventListener("load", function() {
     }
   }
 
+  function toggleEq(filter, value) {
+    setEqualizerBand(filter, RANGE[value]);
+    EQUALIZER[filter] = parseInt(value);
+    localforage.setItem('__EQUALIZER__', EQUALIZER);
+    localforage.removeItem('__CURRENT_EQUALIZER__');
+  }
+
   localforage.getItem('__EQUALIZER__')
   .then((eql) => {
     if (!eql)
       eql = EQUALIZER;
     EQUALIZER = eql;
     for (var v in eql) {
-      setEqualizerBand(v, RANGE[eql[v]]);
+      toggleEq(v, eql[v]);
     }
-    localforage.setItem('__EQUALIZER__', EQUALIZER);
   });
 
   //setTimeout(() => {
