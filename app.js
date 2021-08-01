@@ -407,6 +407,8 @@ window.addEventListener("load", function() {
   }
 
   function shuffling() {
+    if (TRACKLIST.length <= 1)
+      return
     const SHUFFLE = state.getState('SHUFFLE');
     if (SHUFFLE) {
       const v_id = TRACKLIST[state.getState('TRACKLIST_IDX')].id;
