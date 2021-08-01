@@ -313,8 +313,13 @@ window.addEventListener("load", function() {
 
   function loadEq(name) {
     var eql = EQL_PRESENT[name];
-    for (var v in eql) {
-      setEqualizerBand(v, eql[v]);
+    if (eql) {
+      for (var v in eql) {
+        const i = setEqualizerBand(v, eql[v]);
+        EQUALIZER[v] = parseInt(i);
+      }
+      localforage.setItem('__EQUALIZER__', EQUALIZER);
+      localforage.setItem('__CURRENT_EQUALIZER__', name);
     }
   }
 
@@ -326,11 +331,12 @@ window.addEventListener("load", function() {
     for (var v in eql) {
       setEqualizerBand(v, RANGE[eql[v]]);
     }
+    localforage.setItem('__EQUALIZER__', EQUALIZER);
   });
 
-  setTimeout(() => {
-    loadEq("Full Treble")
-  }, 5000);
+  //setTimeout(() => {
+  //  loadEq("Full Bass")
+  //}, 5000);
   //setTimeout(disableEq, 5000);
   //setTimeout(enableEq, 7000);
 
