@@ -315,7 +315,7 @@ window.addEventListener("load", function() {
     var eql = EQL_PRESENT[name];
     if (eql) {
       for (var v in eql) {
-        const i = setEqualizerBand(v, eql[v]);
+        const i = setEqualizerBand(v, normalizeEqBand(eql[v]));
         EQUALIZER[v] = parseInt(i);
       }
       localforage.setItem('__EQUALIZER__', EQUALIZER);
@@ -324,19 +324,26 @@ window.addEventListener("load", function() {
   }
 
   function toggleEq(filter, value) {
-    setEqualizerBand(filter, RANGE[value]);
+    setEqualizerBand(filter, normalizeEqBand(RANGE[value]));
     EQUALIZER[filter] = parseInt(value);
     localforage.setItem('__EQUALIZER__', EQUALIZER);
     localforage.removeItem('__CURRENT_EQUALIZER__');
   }
 
-  localforage.getItem('__EQUALIZER__')
-  .then((eql) => {
-    if (!eql)
-      eql = EQUALIZER;
-    EQUALIZER = eql;
-    for (var v in eql) {
-      toggleEq(v, eql[v]);
+  localforage.getItem('__CURRENT_EQUALIZER__')
+  .then((cur) => {
+    if (cur) {
+      loadEq(cur);
+    } else {
+      localforage.getItem('__EQUALIZER__')
+      .then((eql) => {
+        if (!eql)
+          eql = EQUALIZER;
+        EQUALIZER = eql;
+        for (var v in eql) {
+          toggleEq(v, eql[v]);
+        }
+      });
     }
   });
 
@@ -1948,6 +1955,7 @@ window.addEventListener("load", function() {
           { text: 'Local Database' },
           { text: 'Playlist' },
           { text: 'Preferred Mime' },
+          { text: 'Built-in Equalizer' },
           // { text: 'Artist' },
           // { text: 'Album' },
           // { text: 'Genre' },
@@ -1982,6 +1990,20 @@ window.addEventListener("load", function() {
                 this.$state.setState('CONFIGURATION', CONFIGURATION);
               });
             }, 'Cancel', null, undefined, idx);
+          } else if (selected.text === 'Built-in Equalizer') {
+            localforage.getItem('__CURRENT_EQUALIZER__')
+            .then((cur) => {
+              const opts = [];
+              for (var x in EQL_PRESENT) {
+                opts.push({ "text": x, "checked": x === cur });
+              }
+              const idx = opts.findIndex((opt) => {
+                return opt.text === cur;
+              });
+              this.$router.showSingleSelector('Built-in Equalizer', opts, 'Select', (selected) => {
+                loadEq(selected.text)
+              }, 'Cancel', null, undefined, idx);
+            });
           } else if (selected.text === 'Exit') {
             window.close();
           } else {
