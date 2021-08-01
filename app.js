@@ -10,7 +10,7 @@ const DEFAULT_VOLUME = 0.02;
 
 const SDCARD = navigator.getDeviceStorage('sdcard');
 
-function saveDownload(blob, name, cb = () => {}) {
+function saveBlobToStorage(blob, name, cb = () => {}) {
   var mime = blob.type.split('/')[1];
   var path = 'ytm';
   if (SDCARD.storageName !== '') {
@@ -202,7 +202,7 @@ window.addEventListener("load", function() {
     const next = state.getState('TRACKLIST_IDX') + 1;
     if (TRACKLIST[next]) {
       state.setState('TRACKLIST_IDX', next);
-      getURL(next);
+      playVideoByID(next);
     }
   }
 
@@ -259,7 +259,7 @@ window.addEventListener("load", function() {
       for (var y in tracks) {
         TRACKLIST.push(tracks[y]);
       }
-      getURL(state.getState('TRACKLIST_IDX'));
+      playVideoByID(state.getState('TRACKLIST_IDX'));
     });
   }
 
@@ -293,7 +293,7 @@ window.addEventListener("load", function() {
           state.setState('TRACKLIST_IDX', 0);
           TRACK_NAME = PLYLST.name;
           TRACKLIST = collections;
-          getURL(state.getState('TRACKLIST_IDX'));
+          playVideoByID(state.getState('TRACKLIST_IDX'));
           router.showToast(`PLAYING ${TRACK_NAME}`);
           localforage.setItem(DB_PLAYING, PLYLST.id);
         }
@@ -304,7 +304,7 @@ window.addEventListener("load", function() {
     });
   }
 
-  function downloadAudio(id) {
+  function getAudioStreamURL(id) {
     return getVideoLinks(id)
     .then((links) => {
       if (router && router.loading) {
@@ -352,10 +352,11 @@ window.addEventListener("load", function() {
     });
   }
 
-  function getURL(idx) {
+  function playVideoByID(idx) {
     if (TRACKLIST[idx] == null) {
       return
     }
+    console.log(TRACKLIST[idx]);
     if (TRACKLIST[idx].local_path) {
       var request = SDCARD.get(TRACKLIST[idx].local_path);
       request.onsuccess = (file) => {
@@ -367,40 +368,59 @@ window.addEventListener("load", function() {
         console.warn("Unable to get the file: " + error.toString());
       }
     } else {
-      if (router && router.loading) {
+      // attempt download
+      getAudioStreamURL(TRACKLIST[idx].id)
+      .then((url) => {
+        // router.hideLoading();
         router.showLoading();
-      }
-      getVideoLinks(TRACKLIST[idx].id)
-      .then((links) => {
-        if (router && router.loading) {
-          router.hideLoading();
+        const down = new XMLHttpRequest({ mozSystem: true });
+        down.open('GET', url, true);
+        down.responseType = 'blob';
+        down.onload = (evt) => {
+          saveBlobToStorage(evt.currentTarget.response, `${TRACKLIST[idx].id}_${TRACKLIST[idx]._title || TRACKLIST[idx].title}`, (localPath) => {
+            if (localPath === false) {
+              router.showToast("Error SAVING");
+            } else {
+              TRACKLIST[idx].local_path = localPath;
+              playVideoByID(idx);
+              localforage.getItem(DB_NAME)
+              .then((DATABASE) => {
+                if (DATABASE == null) {
+                  DATABASE = {};
+                }
+                DATABASE[TRACKLIST[idx].id] = TRACKLIST[idx];
+                localforage.setItem(DB_NAME, DATABASE)
+                .then(() => {
+                  router.showToast('Saved');
+                  return localforage.getItem(DB_NAME);
+                })
+                .then((UPDATED_DATABASE) => {
+                  state.setState('DATABASE', UPDATED_DATABASE);
+                })
+                .catch((err) => {
+                  console.log(err);
+                  router.showToast(err.toString());
+                });
+              })
+            }
+            router.hideLoading();
+          });
         }
-        var obj = null;
-        var quality = 0;
-        const MIME = state.getState('CONFIGURATION')['mimeType'] || 'audio';
-        links.forEach((link) => {
-          if (link.mimeType.indexOf(MIME) > -1) {
-            var br = parseInt(link.bitrate);
-            if (br > 999) {
-              br = Math.round(br/1000);
-            }
-            link.br = br;
-            if (link.br >= quality) {
-              obj = link;
-              quality = link.br;
-            }
+        down.onprogress = (evt) => {
+          if (evt.lengthComputable) {
+            var percentComplete = evt.loaded / evt.total * 100;
+            router.showToast(`${percentComplete.toFixed(2)}%`);
           }
-        });
-        // console.log(MIME, obj);
-        if (obj) {
-          playMainAudio(obj);
         }
+        down.onerror = (err) => {
+          router.hideLoading();
+          router.showToast("Error DOWNLOADING");
+        }
+        down.send();
       })
       .catch((e) => {
-        if (router && router.loading) {
-          router.hideLoading();
-        }
-        console.log(e);
+        router.hideLoading();
+        router.showToast("Error GET");
       });
     }
   }
@@ -953,7 +973,7 @@ window.addEventListener("load", function() {
 
                 if (!isUpdate || video.local_path == null) {
                   $router.showLoading();
-                  downloadAudio(video.id)
+                  getAudioStreamURL(video.id)
                   .then((url) => {
                     $router.hideLoading();
                     $router.showLoading();
@@ -961,9 +981,9 @@ window.addEventListener("load", function() {
                     down.open('GET', url, true);
                     down.responseType = 'blob';
                     down.onload = (evt) => {
-                      saveDownload(evt.currentTarget.response, `${video.id}_${video.title}`, (localPath) => {
+                      saveBlobToStorage(evt.currentTarget.response, `${video.id}_${video.title}`, (localPath) => {
                         if (localPath === false) {
-                          $router.showToast("Error SAVE");
+                          $router.showToast("Error SAVING");
                         } else {
                           obj.local_path = localPath;
                           exec(obj);
@@ -979,7 +999,7 @@ window.addEventListener("load", function() {
                     }
                     down.onerror = (err) => {
                       $router.hideLoading();
-                      $router.showToast("Error DOWNLOAD");
+                      $router.showToast("Error DOWNLOADING");
                     }
                     down.send();
                   })
@@ -1751,7 +1771,7 @@ window.addEventListener("load", function() {
         this.$router.showOptionMenu(TRACK_NAME, tracklist, 'Select', (selected) => {
           if (TRACKLIST[selected.idx]) {
             this.$state.setState('TRACKLIST_IDX', selected.idx);
-            getURL(selected.idx);
+            playVideoByID(selected.idx);
           }
         }, () => {}, this.$state.getState('TRACKLIST_IDX'));
       },
@@ -1820,7 +1840,7 @@ window.addEventListener("load", function() {
         const move = this.$state.getState('TRACKLIST_IDX') + 1;
         if (TRACKLIST[move]) {
           this.$state.setState('TRACKLIST_IDX', move);
-          getURL(move);
+          playVideoByID(move);
         }
       },
       arrowDown: function() {
@@ -1830,7 +1850,7 @@ window.addEventListener("load", function() {
         const move = this.$state.getState('TRACKLIST_IDX') - 1;
         if (TRACKLIST[move]) {
           this.$state.setState('TRACKLIST_IDX', move);
-          getURL(move);
+          playVideoByID(move);
         }
       },
     },
