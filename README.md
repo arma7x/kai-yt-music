@@ -1,10 +1,8 @@
-# KaiKit
+# YT Music
 
-## JS framework for KaiOS
-
-## TODO DOCUMENTATION
+## The title explain everything
 
 ## Licence
 
-[MIT](https://opensource.org/licenses/MIT)
+[Unlicense License](https://github.com/arma7x/kai-yt-music/blob/master/LICENSE.txt)
 
