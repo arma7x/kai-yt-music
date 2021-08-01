@@ -8,6 +8,12 @@ const DB_PLAYING = 'YT_PLAYING';
 const DB_CONFIGURATION = 'YT_CONFIGURATION';
 const DEFAULT_VOLUME = 0.02;
 
+const EQL_PRESENT={Classical:{hz60:33,hz170:33,hz310:33,hz600:33,hz1000:33,hz3000:33,hz6000:20,hz12000:20,hz14000:20,hz16000:16,preamp:33},Club:{hz60:33,hz170:33,hz310:38,hz600:42,hz1000:42,hz3000:42,hz6000:38,hz12000:33,hz14000:33,hz16000:33,preamp:33},Dance:{hz60:48,hz170:44,hz310:36,hz600:32,hz1000:32,hz3000:22,hz6000:20,hz12000:20,hz14000:32,hz16000:32,preamp:33},"Laptop speakers/headphones":{hz60:40,hz170:50,hz310:41,hz600:26,hz1000:28,hz3000:35,hz6000:40,hz12000:48,hz14000:53,hz16000:56,preamp:33},"Large hall":{hz60:49,hz170:49,hz310:42,hz600:42,hz1000:33,hz3000:24,hz6000:24,hz12000:24,hz14000:33,hz16000:33,preamp:33},Party:{hz60:44,hz170:44,hz310:33,hz600:33,hz1000:33,hz3000:33,hz6000:33,hz12000:33,hz14000:44,hz16000:44,preamp:33},Pop:{hz60:29,hz170:40,hz310:44,hz600:45,hz1000:41,hz3000:30,hz6000:28,hz12000:28,hz14000:29,hz16000:29,preamp:33},Reggae:{hz60:33,hz170:33,hz310:31,hz600:22,hz1000:33,hz3000:43,hz6000:43,hz12000:33,hz14000:33,hz16000:33,preamp:33},Rock:{hz60:45,hz170:40,hz310:23,hz600:19,hz1000:26,hz3000:39,hz6000:47,hz12000:50,hz14000:50,hz16000:50,preamp:33},Soft:{hz60:40,hz170:35,hz310:30,hz600:28,hz1000:30,hz3000:39,hz6000:46,hz12000:48,hz14000:50,hz16000:52,preamp:33},Ska:{hz60:28,hz170:24,hz310:25,hz600:31,hz1000:39,hz3000:42,hz6000:47,hz12000:48,hz14000:50,hz16000:48,preamp:33},"Full Bass":{hz60:48,hz170:48,hz310:48,hz600:42,hz1000:35,hz3000:25,hz6000:18,hz12000:15,hz14000:14,hz16000:14,preamp:33},"Soft Rock":{hz60:39,hz170:39,hz310:36,hz600:31,hz1000:25,hz3000:23,hz6000:26,hz12000:31,hz14000:37,hz16000:47,preamp:33},"Full Treble":{hz60:16,hz170:16,hz310:16,hz600:25,hz1000:37,hz3000:50,hz6000:58,hz12000:58,hz14000:58,hz16000:60,preamp:33},"Full Bass & Treble":{hz60:44,hz170:42,hz310:33,hz600:20,hz1000:24,hz3000:35,hz6000:46,hz12000:50,hz14000:52,hz16000:52,preamp:33},Live:{hz60:24,hz170:33,hz310:39,hz600:41,hz1000:42,hz3000:42,hz6000:39,hz12000:37,hz14000:37,hz16000:36,preamp:33},Techno:{hz60:45,hz170:42,hz310:33,hz600:23,hz1000:24,hz3000:33,hz6000:45,hz12000:48,hz14000:48,hz16000:47,preamp:33}};
+
+const RANGE={"0":33,"1":35,"2":38,"3":40,"4":43,"5":46,"6":48,"7":51,"8":53,"9":56,"10":58,"11":61,"12":64,"-12":2,"-11":5,"-10":7,"-9":10,"-8":12,"-7":15,"-6":17,"-5":20,"-4":23,"-3":25,"-2":28,"-1":30};
+
+var EQUALIZER = {hz60:0,hz170:0,hz310:0,hz600:0,hz1000:0,hz3000:0,hz6000:0,hz12000:0,hz14000:0,hz16000:0,preamp:0};
+
 const SDCARD = navigator.getDeviceStorage('sdcard');
 
 function saveBlobToStorage(blob, name, cb = () => {}) {
@@ -181,10 +187,152 @@ window.addEventListener("load", function() {
     }
   });
 
-  const MAIN_PLAYER = document.createElement("audio");
-  MAIN_PLAYER.volume = 1;
   var TRACK_NAME = '';
   var TRACKLIST = [];
+
+  const MAIN_PLAYER = document.createElement("audio");
+  MAIN_PLAYER.volume = 1;
+
+  const CONTEXT = new AudioContext('content');
+
+  var staticSource = CONTEXT.createGain();
+  var balance = new StereoBalanceNode(CONTEXT);
+  window['preamp'] = CONTEXT.createGain();
+  var gainNode = CONTEXT.createGain();
+
+  const SOURCE = CONTEXT.createMediaElementSource(MAIN_PLAYER);
+
+  SOURCE.connect(staticSource);
+  staticSource.connect(window['preamp']);
+
+  window['hz60'] = CONTEXT.createBiquadFilter();
+  window['hz60'].type = "lowshelf";
+  window['hz60'].frequency.value = 60;
+  window['hz60'].gain.value = 0;
+  window['preamp'].connect(window['hz60']);
+
+  window['hz170'] = CONTEXT.createBiquadFilter();
+  window['hz170'].type = "peaking";
+  window['hz170'].frequency.value = 170;
+  window['hz170'].gain.value = 0;
+  window['hz60'].connect(window['hz170']);
+
+  window['hz310'] = CONTEXT.createBiquadFilter();
+  window['hz310'].type = "peaking";
+  window['hz310'].frequency.value = 310;
+  window['hz310'].gain.value = 0;
+  window['hz170'].connect(window['hz310']);
+
+  window['hz600'] = CONTEXT.createBiquadFilter();
+  window['hz600'].type = "peaking";
+  window['hz600'].frequency.value = 600;
+  window['hz600'].gain.value = 0;
+  window['hz310'].connect(window['hz600']);
+
+  window['hz1000'] = CONTEXT.createBiquadFilter();
+  window['hz1000'].type = "peaking";
+  window['hz1000'].frequency.value = 1000;
+  window['hz1000'].gain.value = 0;
+  window['hz600'].connect(window['hz1000']);
+
+  window['hz3000'] = CONTEXT.createBiquadFilter();
+  window['hz3000'].type = "peaking";
+  window['hz3000'].frequency.value = 3000;
+  window['hz3000'].gain.value = 0;
+  window['hz1000'].connect(window['hz3000']);
+
+  window['hz6000'] = CONTEXT.createBiquadFilter();
+  window['hz6000'].type = "peaking";
+  window['hz6000'].frequency.value = 6000;
+  window['hz6000'].gain.value = 0;
+  window['hz3000'].connect(window['hz6000']);
+
+  window['hz12000'] = CONTEXT.createBiquadFilter();
+  window['hz12000'].type = "peaking";
+  window['hz12000'].frequency.value = 12000;
+  window['hz12000'].gain.value = 0;
+  window['hz6000'].connect(window['hz12000']);
+
+  window['hz14000'] = CONTEXT.createBiquadFilter();
+  window['hz14000'].type = "peaking";
+  window['hz14000'].frequency.value = 14000;
+  window['hz14000'].gain.value = 0;
+  window['hz12000'].connect(window['hz14000']);
+
+  window['hz16000'] = CONTEXT.createBiquadFilter();
+  window['hz16000'].type = "highshelf";
+  window['hz16000'].frequency.value = 16000;
+  window['hz16000'].gain.value = 0;
+  window['hz14000'].connect(window['hz16000']);
+
+  window['hz16000'].connect(balance);
+  balance.connect(gainNode);
+  gainNode.connect(CONTEXT.destination);
+
+  const toPercent = (min, max, value) => {
+    return (value - min) / (max - min);
+  }
+
+  const percentToRange = (percent, min, max) => {
+    return min + Math.round(percent * (max - min));
+  }
+
+  const percentToIndex = (percent, length) => {
+    return percentToRange(percent, 0, length - 1);
+  }
+
+  const rebound = (oldMin, oldMax, newMin, newMax) => {
+    return (oldValue) => {
+      return percentToRange(toPercent(oldMin, oldMax, oldValue), newMin, newMax);
+    }
+  }
+
+  const normalizeEqBand = rebound(1, 64, 0, 100);
+
+  const setEqualizerBand = (filter, value) => {
+    var db = 0
+    if (filter === 'preamp') {
+      db = (value / 100) * 24 - 12;
+      window[filter]["gain"].value = Math.pow(10, db / 20);
+    } else {
+      db = (value / 100) * 24 - 12;
+      window[filter]["gain"].value = db;
+    }
+    return db;
+  }
+
+  function disableEq() {
+    staticSource.disconnect();
+    staticSource.connect(balance);
+  }
+
+  function enableEq() {
+    staticSource.disconnect();
+    staticSource.connect(window['preamp']);
+  }
+
+  function loadEq(name) {
+    var eql = EQL_PRESENT[name];
+    for (var v in eql) {
+      setEqualizerBand(v, eql[v]);
+    }
+  }
+
+  localforage.getItem('__EQUALIZER__')
+  .then((eql) => {
+    if (!eql)
+      eql = EQUALIZER;
+    EQUALIZER = eql;
+    for (var v in eql) {
+      setEqualizerBand(v, RANGE[eql[v]]);
+    }
+  });
+
+  setTimeout(() => {
+    loadEq("Full Treble")
+  }, 5000);
+  //setTimeout(disableEq, 5000);
+  //setTimeout(enableEq, 7000);
 
   const state = new KaiState({
     CONFIGURATION: {},
