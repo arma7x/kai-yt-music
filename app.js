@@ -1392,7 +1392,7 @@ window.addEventListener("load", function() {
           if (selected) {
             if (selected.isVideo) {
               this.$router.setSoftKeyCenterText('PLAY');
-              this.$router.setSoftKeyRightText('Save ID');
+              this.$router.setSoftKeyRightText('Save');
             } else {
               this.$router.setSoftKeyCenterText('SELECT');
             }
