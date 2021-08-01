@@ -770,7 +770,6 @@ window.addEventListener("load", function() {
         filters.push({ name: x, value: EQUALIZER[x] });
       }
       this.setData({ filters: filters });
-      console.log(this.data.filters);
     },
     unmounted: function() {},
     methods: {},
