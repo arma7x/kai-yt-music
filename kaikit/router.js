@@ -223,6 +223,10 @@ const KaiRouter = (function() {
     } else {
       DOM.classList.add('kui-overlay-visible-no-sk');
     }
+    if (component.verticalNavIndex > -1) {
+      component.verticalNavIndex -= 1;
+      component.dPadNavListener.arrowDown();
+    }
   }
 
   KaiRouter.prototype.hideBottomSheet = function() {
@@ -250,6 +254,12 @@ const KaiRouter = (function() {
     } else {
       DOM.classList.remove('kui-overlay-visible-no-sk');
     }
+    setTimeout(() => {
+      if (component.verticalNavIndex > -1) {
+        component.verticalNavIndex -= 1;
+        component.dPadNavListener.arrowDown();
+      }
+    }, 10);
   }
 
   KaiRouter.prototype.showDialog = function(title, body, dataCb, positiveText, positiveCb, negativeText, negativeCb, neutralText, neutralCb, closeCb) {

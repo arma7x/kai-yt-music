@@ -1786,12 +1786,11 @@ window.addEventListener("load", function() {
           this.verticalNavIndex = -1;
           this.data.results = [];
           this.data.bulk_results = bulk_results;
+          console.log(this.data.bulk_results);
           this.methods.processResult(0);
         }
       },
       processResult: function(page = 0) {
-        if (this.data.bulk_results.length == 0)
-          return
         const last = this.data.results[this.data.results.length - 1];
         if (last && !last.isVideo) {
           this.data.results.pop();

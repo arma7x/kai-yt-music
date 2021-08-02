@@ -309,79 +309,6 @@ Kai.createToast = function(EL) {
   });
 }
 
-Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, verticalNavIndex = -1, $router) {
-
-  var tabIndex = document.querySelectorAll("[tabIndex").length;
-  options.forEach((opt) => {
-    opt['_tabIndex'] = tabIndex;
-    tabIndex += 1;
-  });
-
-  return new Kai({
-    name: 'option_menu',
-    data: {
-      title: title,
-      options: options
-    },
-    verticalNavClass: '.optMenuNav',
-    verticalNavIndex: verticalNavIndex,
-    template: '\
-    <div class="kui-option-menu">\
-      <div class="kui-option-title">{{ title }}</div>\
-      <div class="kui-option-body">\
-        <ul id="kui-options" class="kui-options">\
-          {{#options}}\
-            <li class="optMenuNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>{{text}}{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}</li>\
-          {{/options}}\
-        </ul>\
-      </div>\
-    </div>',
-    methods: {
-      selectOption: function(data) {
-        if ($router) {
-          $router.hideOptionMenu();
-        }
-        if (typeof selectCb === 'function') {
-          const d = options[this.verticalNavIndex];
-          if (d) {
-            selectCb(d);
-          } else {
-            selectCb(this.verticalNavIndex);
-          }
-        }
-      }
-    },
-    unmounted: function() {
-      if (closeCb) {
-        closeCb();
-      }
-    },
-    softKeyText: { left: '', center: selectText || 'SELECT', right: '' },
-    softKeyListener: {
-      left: function() {},
-      center: function() {
-        const listNav = document.querySelectorAll(this.verticalNavClass);
-        if (this.verticalNavIndex > -1) {
-          listNav[this.verticalNavIndex].click();
-        }
-      },
-      right: function() {}
-    },
-    dPadNavListener: {
-      arrowUp: function() {
-        this.navigateListNav(-1);
-      },
-      arrowRight: function() {},
-      arrowDown: function() {
-        this.navigateListNav(1);
-      },
-      arrowLeft: function() {},
-    },
-    backKeyListener: function() {
-    }
-  });
-}
-
 Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negativeText, negativeCb, neutralText, neutralCb, closeCb, $router) {
   return new Kai({
     name: 'dialog',
@@ -427,12 +354,89 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
   });
 }
 
-Kai.createSingleSelector = function(title, options, selectText, selectCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
+Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, verticalNavIndex = -1, $router) {
 
+  const sr = `<span class="sr-only">, Press Enter to ${selectText}, Presss Back to return</span>`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
-  options.forEach((opt) => {
+  options.forEach((opt, idx) => {
     opt['_tabIndex'] = tabIndex;
     tabIndex += 1;
+    opt['_idx'] = idx + 1;
+  });
+
+  return new Kai({
+    name: 'option_menu',
+    data: {
+      title: title,
+      options: options
+    },
+    verticalNavClass: '.optMenuNav',
+    verticalNavIndex: verticalNavIndex,
+    template: '\
+    <div class="kui-option-menu">\
+      <div class="kui-option-title">{{ title }}</div>\
+      <div class="kui-option-body">\
+        <ul id="kui-options" class="kui-options">\
+          {{#options}}\
+            <li class="optMenuNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'><span class="sr-only">{{ _idx }}, </span>{{text}}{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}' + sr + '</li>\
+          {{/options}}\
+        </ul>\
+      </div>\
+    </div>',
+    methods: {
+      selectOption: function(data) {
+        if ($router) {
+          $router.hideOptionMenu();
+        }
+        if (typeof selectCb === 'function') {
+          const d = options[this.verticalNavIndex];
+          if (d) {
+            selectCb(d);
+          } else {
+            selectCb(this.verticalNavIndex);
+          }
+        }
+      }
+    },
+    unmounted: function() {
+      if (closeCb) {
+        closeCb();
+      }
+    },
+    softKeyText: { left: '', center: selectText.toUpperCase() || 'SELECT', right: '' },
+    softKeyListener: {
+      left: function() {},
+      center: function() {
+        const listNav = document.querySelectorAll(this.verticalNavClass);
+        if (this.verticalNavIndex > -1) {
+          listNav[this.verticalNavIndex].click();
+        }
+      },
+      right: function() {}
+    },
+    dPadNavListener: {
+      arrowUp: function() {
+        this.navigateListNav(-1);
+      },
+      arrowRight: function() {},
+      arrowDown: function() {
+        this.navigateListNav(1);
+      },
+      arrowLeft: function() {},
+    },
+    backKeyListener: function() {
+    }
+  });
+}
+
+Kai.createSingleSelector = function(title, options, selectText, selectCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
+
+  const sr = `<span class="sr-only">, Press Enter to ${selectText}, Presss Back to return</span>`;
+  var tabIndex = document.querySelectorAll("[tabIndex").length;
+  options.forEach((opt, idx) => {
+    opt['_tabIndex'] = tabIndex;
+    tabIndex += 1;
+    opt['_idx'] = idx + 1;
   });
 
   options = JSON.parse(JSON.stringify(options));
@@ -460,14 +464,14 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
           {{#options}}\
             <li class="optSSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
-                <span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
+                <span class="sr-only">{{ _idx }}, </span><span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
-                  <label class="radio"><input type="radio" name="radio" checked><span></span></label>\
+                  <label class="radio"><input type="radio" name="radio" checked><span></span><span class="sr-only">, Selected</span></label>\
                 {{/checked}}\
                 {{^checked}}\
-                  <label class="radio"><input type="radio" name="radio"><span></span></label>\
+                  <label class="radio"><input type="radio" name="radio"><span></span><span class="sr-only">, Unselected</span></label>\
                 {{/checked}}\
-                \
+                ' + sr + '\
               </div>\
             </li>\
           {{/options}}\
@@ -489,7 +493,7 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
         }
       }
     },
-    softKeyText: { left: cancelText || 'Cancel', center: selectText || 'SELECT', right: '' },
+    softKeyText: { left: cancelText || 'Cancel', center: selectText.toUpperCase() || 'SELECT', right: '' },
     softKeyListener: {
       left: function() {
         if ($router) {
@@ -529,10 +533,12 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
 
 Kai.createMultiSelector = function(title, options, selectText, selectCb, saveText, saveCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
 
+  const sr = `<span class="sr-only">, Press Right Key to ${saveText.trim().length > 0 ? saveText.trim() : 'Save'}, Presss Back to return</span>`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
-  options.forEach((opt) => {
+  options.forEach((opt, idx) => {
     opt['_tabIndex'] = tabIndex;
     tabIndex += 1;
+    opt['_idx'] = idx + 1;
   });
 
   options = JSON.parse(JSON.stringify(options));
@@ -561,14 +567,15 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
           {{#options}}\
             <li class="optMSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
-                <span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
+                <span class="sr-only">{{ _idx }}, </span><span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
-                  <label class="checkbox"><input type="checkbox" checked><span></span></label>\
+                  <label class="checkbox"><input type="checkbox" checked><span></span><span class="sr-only">, Selected, Press Enter to deselect</span></label>\
                 {{/checked}}\
                 {{^checked}}\
-                  <label class="checkbox"><input type="checkbox"><span></span></label>\
+                  <label class="checkbox"><input type="checkbox"><span></span><span class="sr-only">, Unselected, Press Enter to select</span></label>\
                 {{/checked}}\
               </div>\
+              ' + sr + '\
             </li>\
           {{/options}}\
         </ul>\
@@ -601,7 +608,7 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
         }
       }
     },
-    softKeyText: { left: cancelText || 'Cancel', center: selectText || 'SELECT', right: saveText || 'Save' },
+    softKeyText: { left: cancelText || 'Cancel', center: selectText.toUpperCase() || 'SELECT', right: saveText || 'Save' },
     softKeyListener: {
       left: function() {
         if ($router) {
