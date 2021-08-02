@@ -1,7 +1,7 @@
 {
   "version": "1.0.1",
   "name": "YT Music",
-  "description": "JS framework for KaiOS",
+  "description": "YT Music Player",
   "launch_path": "/index.html",
   "theme": "#FF0000",
   "theme_color": "#FF0000",
@@ -45,8 +45,8 @@
   "locales": {
     "en-US": {
       "name": "YT Music",
-      "subtitle": "JS framework for KaiOS",
-      "description": "JS framework for KaiOS"
+      "subtitle": "YT Music Player",
+      "description": "YT Music Player"
     }
   },
   "default_locale": "en-US"
