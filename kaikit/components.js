@@ -356,7 +356,7 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
 
 Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, verticalNavIndex = -1, $router) {
 
-  const sr = `<span class="sr-only">, Press Enter to ${selectText}, Presss Back to return</span>`;
+  const sr = `<span class="sr-only">, Press Enter to ${selectText}, Presss Back to return,</span>`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
   options.forEach((opt, idx) => {
     opt['_tabIndex'] = tabIndex;
@@ -431,7 +431,7 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
 
 Kai.createSingleSelector = function(title, options, selectText, selectCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
 
-  const sr = `<span class="sr-only">, Press Enter to ${selectText}, Presss Back to return</span>`;
+  const sr = `, Press Enter to ${selectText}, Presss Back to return,`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
   options.forEach((opt, idx) => {
     opt['_tabIndex'] = tabIndex;
@@ -464,14 +464,13 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
           {{#options}}\
             <li class="optSSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
-                <span class="sr-only">{{ _idx }}, </span><span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
+                <span class="sr-only">{{ _idx }}, {{text}}, {{#checked}}, Selected{{/checked}}{{^checked}}, Unselected{{/checked}}' + sr + '</span><span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
-                  <label class="radio"><input type="radio" name="radio" checked><span></span><span class="sr-only">, Selected</span></label>\
+                  <label class="radio"><input type="radio" name="radio" checked><span></span></label>\
                 {{/checked}}\
                 {{^checked}}\
-                  <label class="radio"><input type="radio" name="radio"><span></span><span class="sr-only">, Unselected</span></label>\
+                  <label class="radio"><input type="radio" name="radio"><span></span></label>\
                 {{/checked}}\
-                ' + sr + '\
               </div>\
             </li>\
           {{/options}}\
@@ -533,7 +532,7 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
 
 Kai.createMultiSelector = function(title, options, selectText, selectCb, saveText, saveCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
 
-  const sr = `<span class="sr-only">, Press Right Key to ${saveText.trim().length > 0 ? saveText.trim() : 'Save'}, Presss Back to return</span>`;
+  const sr = `, Press Right Key to ${saveText.trim().length > 0 ? saveText.trim() : 'Save'}, Presss Back to return,`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
   options.forEach((opt, idx) => {
     opt['_tabIndex'] = tabIndex;
@@ -567,15 +566,14 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
           {{#options}}\
             <li class="optMSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
-                <span class="sr-only">{{ _idx }}, </span><span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
+                <span class="sr-only">{{ _idx }}, {{text}}, {{#checked}}, Selected, Press Enter to deselect{{/checked}}{{^checked}}, Unselected, Press Enter to select{{/checked}}' + sr + '</span><span style="height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
-                  <label class="checkbox"><input type="checkbox" checked><span></span><span class="sr-only">, Selected, Press Enter to deselect</span></label>\
+                  <label class="checkbox"><input type="checkbox" checked><span></span></label>\
                 {{/checked}}\
                 {{^checked}}\
-                  <label class="checkbox"><input type="checkbox"><span></span><span class="sr-only">, Unselected, Press Enter to select</span></label>\
+                  <label class="checkbox"><input type="checkbox"><span></span></label>\
                 {{/checked}}\
               </div>\
-              ' + sr + '\
             </li>\
           {{/options}}\
         </ul>\
