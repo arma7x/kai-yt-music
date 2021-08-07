@@ -620,17 +620,8 @@ window.addEventListener("load", function() {
     if (TRACKLIST[idx] == null) {
       return
     }
-    if (TRACKLIST[idx].local_path) {
-      var request = SDCARD.get(TRACKLIST[idx].local_path);
-      request.onsuccess = (file) => {
-        MAIN_PLAYER.mozAudioChannelType = 'content';
-        MAIN_PLAYER.src = URL.createObjectURL(file.target.result);
-        MAIN_PLAYER.play();
-      }
-      request.onerror = ( error) => {
-        console.warn("Unable to get the file: " + error.toString());
-      }
-    } else {
+
+    function _fallback() {
       // attempt download
       getAudioStreamURL(TRACKLIST[idx].id)
       .then((url) => {
@@ -685,6 +676,21 @@ window.addEventListener("load", function() {
         router.hideLoading();
         router.showToast("Error GET");
       });
+    }
+
+    if (TRACKLIST[idx].local_path) {
+      var request = SDCARD.get(TRACKLIST[idx].local_path);
+      request.onsuccess = (file) => {
+        MAIN_PLAYER.mozAudioChannelType = 'content';
+        MAIN_PLAYER.src = URL.createObjectURL(file.target.result);
+        MAIN_PLAYER.play();
+      }
+      request.onerror = ( error) => {
+        _fallback();
+        console.warn("Unable to get the file: " + error.toString());
+      }
+    } else {
+      _fallback();
     }
   }
 
