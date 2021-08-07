@@ -166,7 +166,7 @@ const KaiRouter = (function() {
     if (pathname.length === 0) {
       pathname = '/index.html';
     }
-    if ((paths.length > 0 && this.stack.length) > 0 && (paths.length === this.stack.length)) {
+    if ((paths.length > 0 && this.stack.length > 0) && (paths.length === this.stack.length)) {
       var r = false;
       if ((this.stack.length - 1) > 0) {
         paths.pop();
