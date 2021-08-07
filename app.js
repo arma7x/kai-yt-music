@@ -22,7 +22,7 @@ function saveBlobToStorage(blob, name, cb = () => {}) {
   if (SDCARD.storageName !== '') {
     path = `/${SDCARD.storageName}/ytm`;
   }
-  path = `${path}/${name}.${mime}`;
+  path = `${path}/${new Date().getTime().toString()}_${name}.${mime}`;
   const addFile = SDCARD.addNamed(blob, path);
   addFile.onsuccess = (evt) => {
     cb(path);
@@ -510,6 +510,7 @@ window.addEventListener("load", function() {
 
   function playDefaultCollection() {
     TRACKLIST = [];
+    _TRACKLIST = [];
     localforage.removeItem(DB_PLAYING);
     state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
