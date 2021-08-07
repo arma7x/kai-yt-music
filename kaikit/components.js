@@ -344,6 +344,11 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
         }
       }
     },
+    mounted: function() {
+      setTimeout(() => {
+        this.navigateListNav(1);
+      }, 100);
+    },
     unmounted: function() {
       if (closeCb) {
         closeCb();
@@ -356,7 +361,7 @@ Kai.createDialog = function(title, body, dataCb, positiveText, positiveCb, negat
 
 Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, verticalNavIndex = -1, $router) {
 
-  const sr = `<span class="sr-only">, Press Enter to ${selectText}, Presss Back to return,</span>`;
+  const sr = `, Press Enter to ${selectText}, Presss Back to return,`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
   options.forEach((opt, idx) => {
     opt['_tabIndex'] = tabIndex;
@@ -378,7 +383,7 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
       <div class="kui-option-body">\
         <ul id="kui-options" class="kui-options">\
           {{#options}}\
-            <li class="optMenuNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'><span class="sr-only">{{ _idx }}, </span>{{text}}{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}' + sr + '</li>\
+            <li class="optMenuNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'><span class="sr-only">{{ _idx }}, {{text}}{{#subtext}}, {{subtext}}{{/subtext}}' + sr + '</span><span>{{text}}</span>{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}</li>\
           {{/options}}\
         </ul>\
       </div>\
@@ -670,6 +675,24 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
 
 Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router) {
 
+  function formatString(val) {
+    val = val.toString();
+    if (val === '-')
+      return val;
+    const l = val[val.length - 1];
+    if (l === '1')
+      val = val + 'st';
+    else if (l === '2')
+      val = val + 'nd';
+    else if (l === '3')
+      val = val + 'rd';
+    else
+      val = val + 'th';
+    return val;
+  }
+
+  var tabIndex = document.querySelectorAll("[tabIndex").length;
+
   const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   const today = new Date();
   day = day == undefined ? today.getDate() : day;
@@ -691,6 +714,9 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
       dayT: day - 1 < 1 ? '-' : (day - 1),
       dayM: day,
       dayB: day + 1 > MAX_DAY ? '-' : (day + 1),
+      _dayT: day - 1 < 1 ? '-' : formatString((day - 1)),
+      _dayM: formatString(day),
+      _dayB: day + 1 > MAX_DAY ? '-' : formatString((day + 1)),
       selector: 0
     },
     template: '\
@@ -699,27 +725,31 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
       <div class="kui-option-body">\
         <div class="kui-lcr-container">\
           <div class="kai-left-col">\
-            <div class="kai-lcr-top">{{ dayT }}</div>\
-            <div id="__kai_dp_day__" class="kai-lcr-mid">{{ dayM }}</div>\
-            <div class="kai-lcr-bottom">{{ dayB }}</div>\
+            <div aria-hidden="true" class="kai-lcr-top">{{ _dayT }}</div>\
+            <div id="__kai_dp_day__" tabindex="' + (tabIndex + 1) + '" class="kai-lcr-mid"><span class="sr-only">Day of {{ _dayM }}, press Arrow Up or Arrow Down to change day, press Enter to save, Back to cancel, or Arrow Right to set month,</span><span aria-hidden="true">{{ _dayM }}</span></div>\
+            <div aria-hidden="true" class="kai-lcr-bottom">{{ _dayB }}</div>\
           </div>\
           <div class="kai-center-col">\
-            <div class="kai-lcr-top">{{ monthT }}</div>\
-            <div id="__kai_dp_month__" class="kai-lcr-mid">{{ monthM }}</div>\
-            <div class="kai-lcr-bottom">{{ monthB }}</div>\
+            <div aria-hidden="true" class="kai-lcr-top">{{ monthT }}</div>\
+            <div id="__kai_dp_month__" tabindex="' + (tabIndex + 1) + '" class="kai-lcr-mid"><span class="sr-only">Month of {{ monthM }}, press Arrow Up or Arrow Down to change month, press Enter to save, Back to cancel, Arrow Left to set day, or Arrow Right to set year,</span><span aria-hidden="true">{{ monthM }}</span></div>\
+            <div aria-hidden="true" class="kai-lcr-bottom">{{ monthB }}</div>\
           </div>\
           <div class="kai-right-col">\
-            <div class="kai-lcr-top">{{ yearT }}</div>\
-            <div id="__kai_dp_year__" class="kai-lcr-mid">{{ yearM }}</div>\
-            <div class="kai-lcr-bottom">{{ yearB }}</div>\
+            <div aria-hidden="true" class="kai-lcr-top">{{ yearT }}</div>\
+            <div id="__kai_dp_year__" tabindex="' + (tabIndex + 1) + '" class="kai-lcr-mid"><span class="sr-only">Year of {{ yearM }}, press Arrow Up or Arrow Down to change year, press Enter to save, Back to cancel, Arrow Left to set month, or Arrow Right to set day,</span><span aria-hidden="true">{{ yearM }}</span></div>\
+            <div aria-hidden="true" class="kai-lcr-bottom">{{ yearB }}</div>\
           </div>\
         </div>\
       </div>\
     </div>',
     mounted: function() {
-      this.methods.focus();
+      setTimeout(() => {
+        document.activeElement.blur();
+        this.methods.focus();
+      }, 110);
     },
     unmounted: function() {
+      document.activeElement.blur();
       if (closeCb) {
         closeCb();
       }
@@ -728,16 +758,19 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
       focus: function() {
         if (this.data.selector === 0) {
           document.getElementById('__kai_dp_day__').classList.add('kai-focus');
+          document.getElementById('__kai_dp_day__').focus();
           document.getElementById('__kai_dp_month__').classList.remove('kai-focus');
           document.getElementById('__kai_dp_year__').classList.remove('kai-focus');
         } else if (this.data.selector === 1) {
           document.getElementById('__kai_dp_day__').classList.remove('kai-focus');
           document.getElementById('__kai_dp_month__').classList.add('kai-focus');
+          document.getElementById('__kai_dp_month__').focus();
           document.getElementById('__kai_dp_year__').classList.remove('kai-focus');
         } else {
           document.getElementById('__kai_dp_day__').classList.remove('kai-focus');
           document.getElementById('__kai_dp_month__').classList.remove('kai-focus');
           document.getElementById('__kai_dp_year__').classList.add('kai-focus');
+          document.getElementById('__kai_dp_year__').focus();
         }
       },
       setValue: function (val) {
@@ -748,7 +781,7 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
           }
           const dayT = dayM - 1 < 1 ? '-' : (dayM - 1);
           const dayB = dayM + 1 > MAX_DAY ? '-' : (dayM + 1);
-          this.setData({ dayT, dayM, dayB });
+          this.setData({ dayT, _dayT: formatString(dayT), dayM, _dayM: formatString(dayM), dayB, _dayB: formatString(dayB) });
         } else if (this.data.selector === 1) {
           const oldMD = MAX_DAY;
           var idx = MONTHS.indexOf(this.data.monthM);
@@ -825,6 +858,8 @@ Kai.createDatePicker = function(year, month, day = 1, selectCb, closeCb, $router
 
 Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router) {
 
+  var tabIndex = document.querySelectorAll("[tabIndex").length;
+
   const today = new Date();
 
   function isBrowserLocale12h()  {
@@ -872,9 +907,11 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
       title: 'Select Time',
       hourT: is12H ? (hour - 1 > 0 ? twoChar(hour - 1) : '-') : (hour - 1 > -1 ? twoChar(hour - 1) : '-'),
       hourM: twoChar(hour),
+      _hourM: hour,
       hourB: is12H ? (hour + 1 < 13 ? twoChar(hour + 1) : '-') : (hour + 1 < 24 ? twoChar(hour + 1) : '-'),
       minuteT: minute - 1 < 0 ? '-' : twoChar(minute - 1),
       minuteM: twoChar(minute),
+      _minuteM: minute,
       minuteB: minute + 1 > 59 ? '-' : twoChar(minute + 1),
       periodT: periodT,
       periodM: periodM,
@@ -888,29 +925,33 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
       <div class="kui-option-body">\
         <div class="kui-lcr-container">\
           <div class="kai-left-col">\
-            <div class="kai-lcr-top">{{ hourT }}</div>\
-            <div id="__kai_dp_hour__" class="kai-lcr-mid">{{ hourM }}</div>\
-            <div class="kai-lcr-bottom">{{ hourB }}</div>\
+            <div aria-hidden="true" class="kai-lcr-top">{{ hourT }}</div>\
+            <div id="__kai_dp_hour__" tabindex="' + (tabIndex + 1) + '" class="kai-lcr-mid"><span class="sr-only">Hour of {{ _hourM }}, press Arrow Up or Arrow Down to change hour, press Enter to save, Back to cancel, or Arrow Right to set minute,</span><span aria-hidden="true">{{ hourM }}</span></div>\
+            <div aria-hidden="true" class="kai-lcr-bottom">{{ hourB }}</div>\
           </div>\
           <div class="kai-center-col">\
-            <div class="kai-lcr-top">{{ minuteT }}</div>\
-            <div id="__kai_dp_minute__" class="kai-lcr-mid">{{ minuteM }}</div>\
-            <div class="kai-lcr-bottom">{{ minuteB }}</div>\
+            <div aria-hidden="true" class="kai-lcr-top">{{ minuteT }}</div>\
+            <div id="__kai_dp_minute__" tabindex="' + (tabIndex + 1) + '" class="kai-lcr-mid"><span class="sr-only">Minute of {{ _minuteM }}, press Arrow Up or Arrow Down to change minute, press Enter to save, Back to cancel,{{#is12H}} Arrow Left to set hour, or Arrow Right to set duration,{{/is12H}}{{^is12H}} or Arrow Left to set hour,{{/is12H}}</span><span aria-hidden="true">{{ minuteM }}</span></div>\
+            <div aria-hidden="true" class="kai-lcr-bottom">{{ minuteB }}</div>\
           </div>\
           {{#is12H}}\
           <div class="kai-right-col">\
-            <div class="kai-lcr-top">{{ periodT }}</div>\
-            <div id="__kai_dp_period__" class="kai-lcr-mid">{{ periodM }}</div>\
-            <div class="kai-lcr-bottom">{{ periodB }}</div>\
+            <div aria-hidden="true" class="kai-lcr-top">{{ periodT }}</div>\
+            <div id="__kai_dp_period__" tabindex="' + (tabIndex + 1) + '" class="kai-lcr-mid"><span class="sr-only">Duration is {{ periodM }}, press Arrow Up or Arrow Down to change duration, press Enter to save, Back to cancel, Arrow Left to set minute, or Arrow Right to set hour,</span><span aria-hidden="true">{{ periodM }}</span></div>\
+            <div aria-hidden="true" class="kai-lcr-bottom">{{ periodB }}</div>\
           </div>\
           {{/is12H}}\
         </div>\
       </div>\
     </div>',
     mounted: function() {
-      this.methods.focus();
+      setTimeout(() => {
+        document.activeElement.blur();
+        this.methods.focus();
+      }, 110);
     },
     unmounted: function() {
+      document.activeElement.blur();
       if (closeCb) {
         closeCb();
       }
@@ -919,6 +960,7 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
       focus: function() {
         if (this.data.selector === 0) {
           document.getElementById('__kai_dp_hour__').classList.add('kai-focus');
+          document.getElementById('__kai_dp_hour__').focus();
           document.getElementById('__kai_dp_minute__').classList.remove('kai-focus');
           if (this.data.is12H) {
             document.getElementById('__kai_dp_period__').classList.remove('kai-focus');
@@ -926,6 +968,7 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
         } else if (this.data.selector === 1) {
           document.getElementById('__kai_dp_hour__').classList.remove('kai-focus');
           document.getElementById('__kai_dp_minute__').classList.add('kai-focus');
+          document.getElementById('__kai_dp_minute__').focus();
           if (this.data.is12H) {
             document.getElementById('__kai_dp_period__').classList.remove('kai-focus');
           }
@@ -934,6 +977,7 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
           document.getElementById('__kai_dp_minute__').classList.remove('kai-focus');
           if (this.data.is12H) {
             document.getElementById('__kai_dp_period__').classList.add('kai-focus');
+            document.getElementById('__kai_dp_period__').focus();
           }
         }
       },
@@ -945,8 +989,7 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
           }
           var hourT = !this.data.is12H ? (hourM - 1 > -1 ? twoChar(hourM - 1) : '-') : (hourM - 1 > 0 ? twoChar(hourM - 1) : '-');
           var hourB = !this.data.is12H ? (hourM + 1 < 24 ? twoChar(hourM + 1) : '-') : (hourM + 1 < 13 ? twoChar(hourM + 1) : '-');
-          hourM = twoChar(hourM);
-          this.setData({ hourT, hourM, hourB });
+          this.setData({ hourT, hourM: twoChar(hourM), _hourM: hourM, hourB });
         } else if (this.data.selector === 1) {
           var minuteM = parseInt(this.data.minuteM) + val;
           if (minuteM < 0 || minuteM > 59) {
@@ -954,8 +997,7 @@ Kai.createTimePicker = function(hour, minute, is12H, selectCb, closeCb, $router)
           }
           var minuteT = minuteM - 1 < 0 ? '-' : twoChar(minuteM - 1);
           var minuteB = minuteM + 1 > 59 ? '-' : twoChar(minuteM + 1);
-          minuteM = twoChar(minuteM);
-          this.setData({ minuteT, minuteM, minuteB });
+          this.setData({ minuteT, minuteM: twoChar(minuteM), _minuteM: minuteM, minuteB });
         } else {
           if (this.data.periodM === 'PM' && val === -1) {
             this.setData({ periodT: '-', periodM: 'AM', periodB: 'PM' });
