@@ -509,6 +509,9 @@ const Kai = (function() {
         fill = targetElement.clientHeight - less;
         return targetElement.parentElement.scrollTop = scroll + fill;
       } else {
+        if ((targetElement.tagName === 'INPUT' || targetElement.tagName === 'TEXTAREA')) {
+          return targetElement.parentElement.parentElement.scrollTop = 0;
+        }
         return targetElement.parentElement.scrollTop = 0;
       }
     }
