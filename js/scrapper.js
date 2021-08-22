@@ -116,9 +116,10 @@ function decryptSignatureV2(signatureCipher, player) {
       c2 = c2.substring(0, c2.indexOf(`};`));
       c2 = c2 + `};`
       c2 = c2.replace(`\n`, "");
-      var d2 = c2.substring(4, 6);
+      var d2 = c2.substring(4, c2.indexOf('='));
 
       CACHED_DECRYPTOR[id] = { parent: c1, parentName: d1, child: c2, childName: d2 }
+      console.log(CACHED_DECRYPTOR[id]);
       var toEval = CACHED_DECRYPTOR[id]['parent'] + CACHED_DECRYPTOR[id]['child'] + `console.log(${CACHED_DECRYPTOR[id]['childName']}('${query['sig']}'))`;
       return evalSig(prepareData(toEval), qs);
     })

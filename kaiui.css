@@ -1080,3 +1080,8 @@ button.kui-btn:focus {
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+.kui-divider {
+    box-sizing: border-box;
+    border-bottom: 1px solid #c0c0c0;
+}

@@ -501,13 +501,16 @@ const Kai = (function() {
     if (navClass === 'horizontalNavClass') {
       return targetElement.parentElement.scrollLeft = targetElement.offsetLeft - targetElement.offsetWidth;
     } else if (navClass === 'verticalNavClass') {
+      // const parent = window.getComputedStyle(document.getElementById(this.id));
+      // console.log(parent.marginTop, parent.marginBottom, isElementInViewport(targetElement, parent.marginTop, parent.marginBottom));
       if (targetElement.offsetTop > targetElement.parentElement.clientHeight) {
-        var fill = 0;
-        var scroll = targetElement.offsetTop - targetElement.parentElement.clientHeight;
-        const max = targetElement.clientHeight * this[navIndex];
-        const less = targetElement.offsetTop - max;
-        fill = targetElement.clientHeight - less;
-        return targetElement.parentElement.scrollTop = scroll + fill;
+        // var fill = 0;
+        // var scroll = targetElement.offsetTop - targetElement.parentElement.clientHeight;
+        // const max = targetElement.clientHeight * this[navIndex];
+        // const less = targetElement.offsetTop - max;
+        // fill = targetElement.clientHeight - less;
+        // return targetElement.parentElement.scrollTop = scroll + fill;
+        return 0;
       } else {
         if ((targetElement.tagName === 'INPUT' || targetElement.tagName === 'TEXTAREA')) {
           return targetElement.parentElement.parentElement.scrollTop = 0;
@@ -515,6 +518,16 @@ const Kai = (function() {
         return targetElement.parentElement.scrollTop = 0;
       }
     }
+  }
+
+  function isElementInViewport(el, marginTop = 0, marginBottom = 0) {
+    var rect = el.getBoundingClientRect();
+    return (
+        rect.top >= 0 + marginTop &&
+        rect.left >= 0 &&
+        rect.bottom <= ((window.innerHeight || document.documentElement.clientHeight) - marginBottom) && /* or $(window).height() */
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
+    );
   }
 
   return Kai;
