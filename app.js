@@ -734,23 +734,25 @@ window.addEventListener("load", function() {
     }
   }
 
-  function playMiniAudio(_this, obj) {
-    ////debug start
-      //_this.$router.showLoading();
-    //decryptSignatureV2(obj.signatureCipher, obj.player)
-    //.then((url) => {
-      //cacheURL(obj, url);
-      //console.log("From Server" ,url);
-      //miniPlayer(_this.$router, url, _this.methods.renderSoftKeyLCR);
-    //})
-    //.catch((err) => {
-      //console.log(err);
-    //})
-    //.finally(() => {
-      //_this.$router.hideLoading();
-    //});
-    //return
-    ////debug end
+  function playMiniAudio(_this, obj, debug = false) {
+    if (debug) {
+      //debug start
+        _this.$router.showLoading();
+      decryptSignatureV2(obj.signatureCipher, obj.player)
+      .then((url) => {
+        cacheURL(obj, url);
+        console.log("From Server" ,url);
+        miniPlayer(_this.$router, url, _this.methods.renderSoftKeyLCR);
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+      .finally(() => {
+        _this.$router.hideLoading();
+      });
+      return
+      //debug end
+    }
     if (obj.url != null) {
       // console.log(obj.url);
       miniPlayer(_this.$router, obj.url, _this.methods.renderSoftKeyLCR);
@@ -2155,7 +2157,7 @@ window.addEventListener("load", function() {
           // { text: 'Artist' },
           // { text: 'Album' },
           // { text: 'Genre' },
-          { text: 'About' },
+          { text: 'Clear Caches' },
           { text: 'Exit' }
         ]
         this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
@@ -2202,6 +2204,11 @@ window.addEventListener("load", function() {
             });
           } else if (selected.text === 'Equalizer Panel') {
             this.$router.push('equalizer_panel');
+          } else if (selected.text === 'Clear Caches') {
+            localforage.setItem(DB_CACHED_URLS, null)
+            .then(() => {
+              this.$router.showToast('DONE');
+            });
           } else if (selected.text === 'Exit') {
             window.close();
           } else {

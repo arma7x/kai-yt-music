@@ -106,7 +106,7 @@ function decryptSignatureV2(signatureCipher, player) {
       var c1 = b1.substring(0, b1.indexOf(`}};`));
       c1 = c1 + `}};`
       c1 = c1.replace(`{return this.audioTracks};`, "");
-      var d1 = c1.substring(4, 6);
+      var d1 = c1.substring(4, c1.indexOf('='));
 
       var a2 = data.response.search(`,isManifestless:!0,`);
       var b2 = data.response.substring(a2, document.body.length);
