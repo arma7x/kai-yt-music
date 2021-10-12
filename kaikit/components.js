@@ -436,6 +436,7 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
 
 Kai.createSingleSelector = function(title, options, selectText, selectCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
 
+  const marginLeft = navigator.b2g ? '0px' : '-25px';
   const sr = `, Press Enter to ${selectText}, Presss Back to return,`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
   options.forEach((opt, idx) => {
@@ -469,7 +470,7 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
           {{#options}}\
             <li class="optSSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
-                <span class="sr-only">{{ _idx }}, {{text}}, {{#checked}} Selected{{/checked}}{{^checked}} Unselected{{/checked}}' + sr + '</span><span style="margin-left:-25px;height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
+                <span class="sr-only">{{ _idx }}, {{text}}, {{#checked}} Selected{{/checked}}{{^checked}} Unselected{{/checked}}' + sr + '</span><span style="margin-left:' + marginLeft + ';height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
                   <label class="radio"><input type="radio" name="radio" checked><span></span></label>\
                 {{/checked}}\
@@ -537,6 +538,7 @@ Kai.createSingleSelector = function(title, options, selectText, selectCb, cancel
 
 Kai.createMultiSelector = function(title, options, selectText, selectCb, saveText, saveCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1, $router) {
 
+  const marginLeft = navigator.b2g ? '0px' : '-25px';
   const sr = `, Press Right Key to ${saveText.trim().length > 0 ? saveText.trim() : 'Save'}, Presss Back to return,`;
   var tabIndex = document.querySelectorAll("[tabIndex").length;
   options.forEach((opt, idx) => {
@@ -571,7 +573,7 @@ Kai.createMultiSelector = function(title, options, selectText, selectCb, saveTex
           {{#options}}\
             <li class="optMSNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'>\
               <div class="kui-row-center">\
-                <span class="sr-only">{{ _idx }}, {{text}}, {{#checked}} Selected, Press Enter to deselect{{/checked}}{{^checked}} Unselected, Press Enter to select{{/checked}}' + sr + '</span><span style="margin-left:-25px;height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
+                <span class="sr-only">{{ _idx }}, {{text}}, {{#checked}} Selected, Press Enter to deselect{{/checked}}{{^checked}} Unselected, Press Enter to select{{/checked}}' + sr + '</span><span style="margin-left:' + marginLeft + ';height:100%;width:80%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>\
                 {{#checked}}\
                   <label class="checkbox"><input type="checkbox" checked><span></span></label>\
                 {{/checked}}\

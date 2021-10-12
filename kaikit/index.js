@@ -260,6 +260,16 @@ const Kai = (function() {
           this.$router.onInputBlur();
       });
     }
+    for(var i=0;i<DOM.getElementsByTagName('textarea').length;i++) {
+      DOM.getElementsByTagName('textarea')[i].addEventListener('focus', (evt) => {
+        if (this.$router)
+          this.$router.onInputFocus();
+      });
+      DOM.getElementsByTagName('textarea')[i].addEventListener('blur', (evt) => {
+        if (this.$router)
+          this.$router.onInputBlur();
+      });
+    }
     if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') && this.$router) {
       this.$router.onInputFocus();
     }
@@ -499,25 +509,50 @@ const Kai = (function() {
       nav[currentIndex].classList.remove('focus');
     }
     if (navClass === 'horizontalNavClass') {
+      if (!isElementInViewport(targetElement, 0, 0)) {
+        return targetElement.parentElement.scrollLeft = targetElement.offsetLeft;
+      }
       return targetElement.parentElement.scrollLeft = targetElement.offsetLeft - targetElement.offsetWidth;
     } else if (navClass === 'verticalNavClass') {
-      // const parent = window.getComputedStyle(document.getElementById(this.id));
-      // console.log(parent.marginTop, parent.marginBottom, isElementInViewport(targetElement, parent.marginTop, parent.marginBottom));
+      const container = document.getElementById(this.id);
+      const parent = window.getComputedStyle(container);
+      const marginBottom = window.innerHeight - container.offsetTop - container.offsetHeight;
       if (targetElement.offsetTop > targetElement.parentElement.clientHeight) {
-        // var fill = 0;
-        // var scroll = targetElement.offsetTop - targetElement.parentElement.clientHeight;
-        // const max = targetElement.clientHeight * this[navIndex];
-        // const less = targetElement.offsetTop - max;
-        // fill = targetElement.clientHeight - less;
-        // return targetElement.parentElement.scrollTop = scroll + fill;
-        return 0;
+        if ((targetElement.tagName === 'INPUT' || targetElement.tagName === 'TEXTAREA')) {
+          const LI = getParent(targetElement);
+          if (LI && !isElementInViewport(LI, parseFloat(parent.marginTop), parseFloat(parent.marginBottom))) {
+            var fill = parseFloat(LI.parentElement.clientHeight) - ((parseFloat(LI.offsetTop) - parseFloat(parent.marginTop)) + parseFloat(LI.offsetHeight));
+            fill = fill < 0 ? -(fill) : fill;
+            pad = fill;
+            return LI.parentElement.scrollTop = pad;
+          }
+        } else if (!isElementInViewport(targetElement, parseFloat(container.offsetTop), parseFloat(marginBottom))) {
+          var fill = parseFloat(targetElement.parentElement.clientHeight) - ((parseFloat(targetElement.offsetTop) - parseFloat(container.offsetTop)) + parseFloat(targetElement.offsetHeight));
+          fill = fill < 0 ? -(fill) : fill;
+          pad = fill;
+          return targetElement.parentElement.scrollTop = pad;
+        }
+        return targetElement.parentElement.scrollTop;
       } else {
+        var pad = 0;
         if ((targetElement.tagName === 'INPUT' || targetElement.tagName === 'TEXTAREA')) {
           return targetElement.parentElement.parentElement.scrollTop = 0;
+        } else if (!isElementInViewport(targetElement, parseFloat(parent.marginTop), parseFloat(parent.marginBottom))) {
+          var fill = parseFloat(targetElement.parentElement.clientHeight) - ((parseFloat(targetElement.offsetTop) - parseFloat(parent.marginTop)) + parseFloat(targetElement.offsetHeight));
+          fill = fill < 0 ? -(fill) : fill;
+          pad = fill;
         }
-        return targetElement.parentElement.scrollTop = 0;
+        return targetElement.parentElement.scrollTop = 0 + pad;
       }
     }
+  }
+
+  function getParent(targetElement) {
+    if (targetElement.parentElement == null)
+      return null
+    if (targetElement.parentElement.tagName != 'LI')
+      return getParent(targetElement.parentElement);
+    return targetElement.parentElement;
   }
 
   function isElementInViewport(el, marginTop = 0, marginBottom = 0) {

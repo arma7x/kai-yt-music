@@ -191,84 +191,121 @@ window.addEventListener("load", function() {
   var TRACKLIST = [];
   var _TRACKLIST = [];
 
-  const MAIN_PLAYER = document.createElement("audio");
+  var MAIN_PLAYER = document.createElement("audio");
   MAIN_PLAYER.volume = 1;
 
-  const CONTEXT = new AudioContext('content');
+  function initEqualizer() {
+    const CONTEXT = new AudioContext('content');
 
-  var staticSource = CONTEXT.createGain();
-  var balance = new StereoBalanceNode(CONTEXT);
-  window['preamp'] = CONTEXT.createGain();
-  var gainNode = CONTEXT.createGain();
+    window['staticSource'] = CONTEXT.createGain();
+    window['balance'] = new StereoBalanceNode(CONTEXT);
+    window['preamp'] = CONTEXT.createGain();
+    var gainNode = CONTEXT.createGain();
 
-  const SOURCE = CONTEXT.createMediaElementSource(MAIN_PLAYER);
+    const SOURCE = CONTEXT.createMediaElementSource(MAIN_PLAYER);
 
-  SOURCE.connect(staticSource);
-  staticSource.connect(window['preamp']);
+    SOURCE.connect(window['staticSource']);
+    window['staticSource'].connect(window['preamp']);
 
-  window['hz60'] = CONTEXT.createBiquadFilter();
-  window['hz60'].type = "lowshelf";
-  window['hz60'].frequency.value = 60;
-  window['hz60'].gain.value = 0;
-  window['preamp'].connect(window['hz60']);
+    const amps = [
+      { type: 'lowshelf', fValue: 60, gValue: 0, head: 'preamp' },
+      { type: 'peaking', fValue: 170, gValue: 0 },
+      { type: 'peaking', fValue: 310, gValue: 0 },
+      { type: 'peaking', fValue: 600, gValue: 0 },
+      { type: 'peaking', fValue: 1000, gValue: 0 },
+      { type: 'peaking', fValue: 3000, gValue: 0 },
+      { type: 'peaking', fValue: 6000, gValue: 0 },
+      { type: 'peaking', fValue: 12000, gValue: 0 },
+      { type: 'peaking', fValue: 14000, gValue: 0 },
+      { type: 'highshelf', fValue: 16000, gValue: 0 }
+    ];
 
-  window['hz170'] = CONTEXT.createBiquadFilter();
-  window['hz170'].type = "peaking";
-  window['hz170'].frequency.value = 170;
-  window['hz170'].gain.value = 0;
-  window['hz60'].connect(window['hz170']);
+    amps.forEach((amp, idx) => {
+      const name = `hz${amp.fValue}`;
+      window[name] = CONTEXT.createBiquadFilter();
+      window[name].type = amp.type;
+      window[name].frequency.value = amp.fValue;
+      window[name].gain.value = amp.gValue;
+      if (idx === 0) {
+        window['preamp'].connect(window[name]);
+      } else {
+        const head = `hz${amps[idx - 1].fValue}`;
+        window[head].connect(window[name]);
+      }
+    });
 
-  window['hz310'] = CONTEXT.createBiquadFilter();
-  window['hz310'].type = "peaking";
-  window['hz310'].frequency.value = 310;
-  window['hz310'].gain.value = 0;
-  window['hz170'].connect(window['hz310']);
+    window['hz16000'].connect(balance);
+    window['balance'].connect(gainNode);
+    gainNode.connect(CONTEXT.destination);
+  }
 
-  window['hz600'] = CONTEXT.createBiquadFilter();
-  window['hz600'].type = "peaking";
-  window['hz600'].frequency.value = 600;
-  window['hz600'].gain.value = 0;
-  window['hz310'].connect(window['hz600']);
+  function enableEq() {
+    initEqualizer();
+    window['staticSource'].disconnect();
+    window['staticSource'].connect(window['preamp']);
+    localforage.setItem('EQUALIZER_STATUS', true);
+    loadCurrentEq();
+  }
 
-  window['hz1000'] = CONTEXT.createBiquadFilter();
-  window['hz1000'].type = "peaking";
-  window['hz1000'].frequency.value = 1000;
-  window['hz1000'].gain.value = 0;
-  window['hz600'].connect(window['hz1000']);
+  function disableEq() {
+    if (window['staticSource'])
+      window['staticSource'].disconnect();
+    if (window['staticSource'])
+      window['staticSource'].connect(window['balance']);
+    localforage.setItem('EQUALIZER_STATUS', false);
+    MAIN_PLAYER.pause();
+    const TEMP = document.createElement("audio");
+    TEMP.volume = 1;
+    //TEMP.onratechange = MAIN_PLAYER.onratechange;
+    TEMP.ontimeupdate = MAIN_PLAYER.ontimeupdate;
+    TEMP.onpause = MAIN_PLAYER.onpause;
+    TEMP.onplay = MAIN_PLAYER.onplay;
+    TEMP.onloadeddata = MAIN_PLAYER.onloadeddata;
+    TEMP.onerror = MAIN_PLAYER.onerror;
+    TEMP.onended = MAIN_PLAYER.onended;
+    TEMP.currentTime = MAIN_PLAYER.currentTime;
+    const move = state.getState('TRACKLIST_IDX');
+    if (TRACKLIST[move]) {
+      state.setState('TRACKLIST_IDX', move);
+      playVideoByID(move);
+    }
+    MAIN_PLAYER = TEMP;
+  }
 
-  window['hz3000'] = CONTEXT.createBiquadFilter();
-  window['hz3000'].type = "peaking";
-  window['hz3000'].frequency.value = 3000;
-  window['hz3000'].gain.value = 0;
-  window['hz1000'].connect(window['hz3000']);
+  function toggleEqStatus() {
+    localforage.getItem('EQUALIZER_STATUS')
+    .then((status) => {
+      console.log('EQUALIZER_STATUS', status);
+      if (status == null || status == true) {
+        enableEq();
+      } else {
+        disableEq();
+      }
+    });
+  }
 
-  window['hz6000'] = CONTEXT.createBiquadFilter();
-  window['hz6000'].type = "peaking";
-  window['hz6000'].frequency.value = 6000;
-  window['hz6000'].gain.value = 0;
-  window['hz3000'].connect(window['hz6000']);
-
-  window['hz12000'] = CONTEXT.createBiquadFilter();
-  window['hz12000'].type = "peaking";
-  window['hz12000'].frequency.value = 12000;
-  window['hz12000'].gain.value = 0;
-  window['hz6000'].connect(window['hz12000']);
-
-  window['hz14000'] = CONTEXT.createBiquadFilter();
-  window['hz14000'].type = "peaking";
-  window['hz14000'].frequency.value = 14000;
-  window['hz14000'].gain.value = 0;
-  window['hz12000'].connect(window['hz14000']);
-
-  window['hz16000'] = CONTEXT.createBiquadFilter();
-  window['hz16000'].type = "highshelf";
-  window['hz16000'].frequency.value = 16000;
-  window['hz16000'].gain.value = 0;
-  window['hz14000'].connect(window['hz16000']);
-
-  window['hz16000'].connect(balance);
-  balance.connect(gainNode);
-  gainNode.connect(CONTEXT.destination);
+  function changeEqStatus() {
+    localforage.getItem('EQUALIZER_STATUS')
+    .then((status) => {
+      if (status == null || status == true) {
+        status = false;
+      } else {
+        status = true;
+      }
+      localforage.setItem('EQUALIZER_STATUS', status)
+      .then(() => {
+        toggleEqStatus();
+        if (router) {
+          if (status) {
+            router.showToast('Equalizer On');
+          } else {
+            router.showToast('Equalizer Off');
+          }
+        }
+      });
+    });
+  }
+  window['toggleEqStatus'] = changeEqStatus;
 
   const toPercent = (min, max, value) => {
     return (value - min) / (max - min);
@@ -302,16 +339,6 @@ window.addEventListener("load", function() {
     return db;
   }
 
-  function disableEq() {
-    staticSource.disconnect();
-    staticSource.connect(balance);
-  }
-
-  function enableEq() {
-    staticSource.disconnect();
-    staticSource.connect(window['preamp']);
-  }
-
   function loadEq(name) {
     var eql = EQL_PRESENT[name];
     if (eql) {
@@ -331,22 +358,27 @@ window.addEventListener("load", function() {
     localforage.removeItem('__CURRENT_EQUALIZER__');
   }
 
-  localforage.getItem('__CURRENT_EQUALIZER__')
-  .then((cur) => {
-    if (cur) {
-      loadEq(cur);
-    } else {
-      localforage.getItem('__EQUALIZER__')
-      .then((eql) => {
-        if (!eql)
-          eql = EQUALIZER;
-        EQUALIZER = eql;
-        for (var v in eql) {
-          toggleEq(v, eql[v]);
-        }
-      });
-    }
-  });
+  function loadCurrentEq() {
+    localforage.getItem('__CURRENT_EQUALIZER__')
+    .then((cur) => {
+      if (cur) {
+        loadEq(cur);
+      } else {
+        localforage.getItem('__EQUALIZER__')
+        .then((eql) => {
+          if (!eql)
+            eql = EQUALIZER;
+          EQUALIZER = eql;
+          for (var v in eql) {
+            toggleEq(v, eql[v]);
+          }
+        });
+      }
+    });
+  }
+
+  toggleEqStatus();
+  loadCurrentEq();
 
   const state = new KaiState({
     CONFIGURATION: {},
@@ -800,9 +832,15 @@ window.addEventListener("load", function() {
     },
     unmounted: function() {},
     methods: {},
-    softKeyText: { left: '', center: '', right: '' },
+    softKeyText: { left: 'Reset', center: '', right: '' },
     softKeyListener: {
-      left: function() {},
+      left: function() {
+        for (var i=0;i<11;i++) {
+          this.data.filters[i].value = 0;
+          toggleEq(this.data.filters[i].name, this.data.filters[i].value);
+        }
+        this.render();
+      },
       center: function() {},
       right: function() {}
     },
@@ -2147,76 +2185,80 @@ window.addEventListener("load", function() {
         }
       },
       right: function() {
-        const menus = [
-          { text: 'Search' },
-          { text: 'Local Database' },
-          { text: 'Playlist' },
-          { text: 'Preferred Mime' },
-          { text: 'Built-in Equalizer' },
-          { text: 'Equalizer Panel' },
-          // { text: 'Artist' },
-          // { text: 'Album' },
-          // { text: 'Genre' },
-          { text: 'Clear Caches' },
-          { text: 'Exit' }
-        ]
-        this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
-          if (selected.text === 'Search') {
-            this.$router.push('search');
-          } else if (selected.text === 'Local Database') {
-            this.$router.push('database');
-          } else if (selected.text === 'Playlist') {
-            this.$router.push('playlist');
-          } else if (selected.text === 'Preferred Mime') {
-            const mime = this.$state.getState('CONFIGURATION')['mimeType'];
-            const opts = [
-              { "text": "audio", "checked": mime === "audio" },
-              { "text": "audio/webm", "checked": mime === "audio/webm" },
-              { "text": "audio/mp4", "checked": mime === "audio/mp4" }
-            ];
-            const idx = opts.findIndex((opt) => {
-              return opt.text === mime;
-            });
-            this.$router.showSingleSelector('Preferred Mime', opts, 'Select', (selected) => {
-              const conf = this.$state.getState('CONFIGURATION');
-              conf['mimeType'] = selected.text;
-              localforage.setItem(DB_CONFIGURATION, conf)
-              .then(() => {
-                return localforage.getItem(DB_CONFIGURATION);
-              })
-              .then((CONFIGURATION) => {
-                this.$state.setState('CONFIGURATION', CONFIGURATION);
-              });
-            }, 'Cancel', null, undefined, idx);
-          } else if (selected.text === 'Built-in Equalizer') {
-            localforage.getItem('__CURRENT_EQUALIZER__')
-            .then((cur) => {
-              const opts = [];
-              for (var x in EQL_PRESENT) {
-                opts.push({ "text": x, "checked": x === cur });
-              }
-              const idx = opts.findIndex((opt) => {
-                return opt.text === cur;
-              });
-              this.$router.showSingleSelector('Built-in Equalizer', opts, 'Select', (selected) => {
-                loadEq(selected.text)
-              }, 'Cancel', null, undefined, idx);
-            });
-          } else if (selected.text === 'Equalizer Panel') {
-            this.$router.push('equalizer_panel');
-          } else if (selected.text === 'Clear Caches') {
-            localforage.setItem(DB_CACHED_URLS, null)
-            .then(() => {
-              this.$router.showToast('DONE');
-            });
-          } else if (selected.text === 'Exit') {
-            window.close();
+        localforage.getItem('EQUALIZER_STATUS')
+        .then((eq_status) => {
+          const menus = [
+            { text: 'Search' },
+            { text: 'Local Database' },
+            { text: 'Playlist' },
+            { text: 'Preferred Mime' },
+          ]
+          if (eq_status) {
+            menus.push({ text: 'Built-in Equalizer' }, { text: 'Equalizer Panel' }, { text: 'Disable Equalizer' });
           } else {
-            // console.log(selected.text);
+            menus.push({ text: 'Enable Equalizer' });
           }
-        }, () => {
-          setTimeout(() => {}, 100);
-        }, 0);
+          menus.push({ text: 'Clear Caches' }, { text: 'Exit' });
+          this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
+            if (selected.text === 'Search') {
+              this.$router.push('search');
+            } else if (selected.text == 'Disable Equalizer' || selected.text == 'Enable Equalizer') {
+              changeEqStatus();
+            } else if (selected.text === 'Local Database') {
+              this.$router.push('database');
+            } else if (selected.text === 'Playlist') {
+              this.$router.push('playlist');
+            } else if (selected.text === 'Preferred Mime') {
+              const mime = this.$state.getState('CONFIGURATION')['mimeType'];
+              const opts = [
+                { "text": "audio", "checked": mime === "audio" },
+                { "text": "audio/webm", "checked": mime === "audio/webm" },
+                { "text": "audio/mp4", "checked": mime === "audio/mp4" }
+              ];
+              const idx = opts.findIndex((opt) => {
+                return opt.text === mime;
+              });
+              this.$router.showSingleSelector('Preferred Mime', opts, 'Select', (selected) => {
+                const conf = this.$state.getState('CONFIGURATION');
+                conf['mimeType'] = selected.text;
+                localforage.setItem(DB_CONFIGURATION, conf)
+                .then(() => {
+                  return localforage.getItem(DB_CONFIGURATION);
+                })
+                .then((CONFIGURATION) => {
+                  this.$state.setState('CONFIGURATION', CONFIGURATION);
+                });
+              }, 'Cancel', null, undefined, idx);
+            } else if (selected.text === 'Built-in Equalizer') {
+              localforage.getItem('__CURRENT_EQUALIZER__')
+              .then((cur) => {
+                const opts = [];
+                for (var x in EQL_PRESENT) {
+                  opts.push({ "text": x, "checked": x === cur });
+                }
+                const idx = opts.findIndex((opt) => {
+                  return opt.text === cur;
+                });
+                this.$router.showSingleSelector('Built-in Equalizer', opts, 'Select', (selected) => {
+                  loadEq(selected.text)
+                }, 'Cancel', null, undefined, idx);
+              });
+            } else if (selected.text === 'Equalizer Panel') {
+              this.$router.push('equalizer_panel');
+            } else if (selected.text === 'Clear Caches') {
+              localforage.setItem(DB_CACHED_URLS, null)
+              .then(() => {
+                this.$router.showToast('DONE');
+              });
+            } else if (selected.text === 'Exit') {
+              window.close();
+            } else {
+              // console.log(selected.text);
+            }
+          }, () => {
+            setTimeout(() => {}, 100);
+          }, 0);
+        });
       }
     },
     dPadNavListener: {
