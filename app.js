@@ -1,20 +1,48 @@
-localforage.setDriver(localforage.LOCALSTORAGE);
+localforage.setDriver(localforage.INDEXEDDB);
 
 const CACHED_DECRYPTOR = {};
-const DB_NAME = 'YT_MUSIC';
-const DB_PLAYLIST = 'YT_PLAYLIST';
-const DB_CACHED_URLS = 'YT_CACHED_URLS';
-const DB_PLAYING = 'YT_PLAYING';
-const DB_CONFIGURATION = 'YT_CONFIGURATION';
+const OLD_PLAYLIST = 'YT_PLAYLIST';
+const OLD_PLAYING = 'YT_PLAYING';
+
 const DEFAULT_VOLUME = 0.02;
-
-const EQL_PRESENT={Classical:{hz60:33,hz170:33,hz310:33,hz600:33,hz1000:33,hz3000:33,hz6000:20,hz12000:20,hz14000:20,hz16000:16,preamp:33},Club:{hz60:33,hz170:33,hz310:38,hz600:42,hz1000:42,hz3000:42,hz6000:38,hz12000:33,hz14000:33,hz16000:33,preamp:33},Dance:{hz60:48,hz170:44,hz310:36,hz600:32,hz1000:32,hz3000:22,hz6000:20,hz12000:20,hz14000:32,hz16000:32,preamp:33},"Laptop speakers/headphones":{hz60:40,hz170:50,hz310:41,hz600:26,hz1000:28,hz3000:35,hz6000:40,hz12000:48,hz14000:53,hz16000:56,preamp:33},"Large hall":{hz60:49,hz170:49,hz310:42,hz600:42,hz1000:33,hz3000:24,hz6000:24,hz12000:24,hz14000:33,hz16000:33,preamp:33},Party:{hz60:44,hz170:44,hz310:33,hz600:33,hz1000:33,hz3000:33,hz6000:33,hz12000:33,hz14000:44,hz16000:44,preamp:33},Pop:{hz60:29,hz170:40,hz310:44,hz600:45,hz1000:41,hz3000:30,hz6000:28,hz12000:28,hz14000:29,hz16000:29,preamp:33},Reggae:{hz60:33,hz170:33,hz310:31,hz600:22,hz1000:33,hz3000:43,hz6000:43,hz12000:33,hz14000:33,hz16000:33,preamp:33},Rock:{hz60:45,hz170:40,hz310:23,hz600:19,hz1000:26,hz3000:39,hz6000:47,hz12000:50,hz14000:50,hz16000:50,preamp:33},Soft:{hz60:40,hz170:35,hz310:30,hz600:28,hz1000:30,hz3000:39,hz6000:46,hz12000:48,hz14000:50,hz16000:52,preamp:33},Ska:{hz60:28,hz170:24,hz310:25,hz600:31,hz1000:39,hz3000:42,hz6000:47,hz12000:48,hz14000:50,hz16000:48,preamp:33},"Full Bass":{hz60:48,hz170:48,hz310:48,hz600:42,hz1000:35,hz3000:25,hz6000:18,hz12000:15,hz14000:14,hz16000:14,preamp:33},"Soft Rock":{hz60:39,hz170:39,hz310:36,hz600:31,hz1000:25,hz3000:23,hz6000:26,hz12000:31,hz14000:37,hz16000:47,preamp:33},"Full Treble":{hz60:16,hz170:16,hz310:16,hz600:25,hz1000:37,hz3000:50,hz6000:58,hz12000:58,hz14000:58,hz16000:60,preamp:33},"Full Bass & Treble":{hz60:44,hz170:42,hz310:33,hz600:20,hz1000:24,hz3000:35,hz6000:46,hz12000:50,hz14000:52,hz16000:52,preamp:33},Live:{hz60:24,hz170:33,hz310:39,hz600:41,hz1000:42,hz3000:42,hz6000:39,hz12000:37,hz14000:37,hz16000:36,preamp:33},Techno:{hz60:45,hz170:42,hz310:33,hz600:23,hz1000:24,hz3000:33,hz6000:45,hz12000:48,hz14000:48,hz16000:47,preamp:33}};
-
-const RANGE={"0":33,"1":35,"2":38,"3":40,"4":43,"5":46,"6":48,"7":51,"8":53,"9":56,"10":58,"11":61,"12":64,"-12":2,"-11":5,"-10":7,"-9":10,"-8":12,"-7":15,"-6":17,"-5":20,"-4":23,"-3":25,"-2":28,"-1":30};
-
-var EQUALIZER = {preamp:0,hz60:0,hz170:0,hz310:0,hz600:0,hz1000:0,hz3000:0,hz6000:0,hz12000:0,hz14000:0,hz16000:0};
-
 const SDCARD = navigator.getDeviceStorage('sdcard');
+
+// DB START 
+
+const DB_NAME = 'YT_MUSIC';
+
+const DB_AUDIO_CURSOR = 'COLLECTIONS';
+const DB_AUDIO = 'YT_AUDIO'; // DB_AUDIO_CURSOR { id: { ...metadata } }
+const T_AUDIO = localforage.createInstance({
+  name: DB_NAME,
+  storeName: DB_AUDIO
+});
+
+const DB_PLAYLIST = 'YT_PLAYLIST'; // { id: {name, playlistURL, collections: []} }
+const T_PLAYLIST = localforage.createInstance({
+  name: DB_NAME,
+  storeName: DB_PLAYLIST
+});
+
+const DB_CACHED_URL = 'YT_CACHED_URL'; // { id: URL }
+const T_CACHED_URL = localforage.createInstance({
+  name: DB_NAME,
+  storeName: DB_CACHED_URL
+});
+
+const DB_PLAYING = 'YT_PLAYING'; // localStorage string
+
+const DB_CONFIGURATION = 'YT_CONFIGURATION';
+const T_CONFIGURATION = localforage.createInstance({
+  name: DB_NAME,
+  storeName: DB_CONFIGURATION
+});
+
+// DB END
+
+var MAIN_DURATION_SLIDER;
+var MAIN_CURRENT_TIME;
+var MAIN_DURATION;
 
 function saveBlobToStorage(blob, name, cb = () => {}) {
   var mime = blob.type.split('/')[1];
@@ -45,17 +73,32 @@ if (navigator.mozAudioChannelManager) {
 
 function convertTime(time) {
   if (isNaN(time)) {
+    if (typeof time === 'string')
+      return time.replace('00:', '');
     return '00:00';
   }
+  var hours = "";
   var mins = Math.floor(time / 60);
+  if (mins > 59) {
+    var hr = Math.floor(mins / 60);
+    mins = Math.floor(mins - Number(60 * hr));
+    hours = hr;
+  }
+  if (hours != "") {
+    if (hours < 10) {
+      hours = "0" + String(hours) + ":";
+    } else {
+      hours = hours + ":";
+    }
+  }
   if (mins < 10) {
-    mins = '0' + String(mins);
+    mins = "0" + String(mins);
   }
   var secs = Math.floor(time % 60);
   if (secs < 10) {
-    secs = '0' + String(secs);
+    secs = "0" + String(secs);
   }
-  return mins + ':' + secs;
+  return hours + mins + ":" + secs;
 }
 
 function toggleVolume(MINI_PLAYER, $router) {
@@ -115,51 +158,67 @@ function getURLParam(key, target) {
   }
 }
 
-function cacheURL(obj, url) {
+function putCachedURL(obj, url) {
   var params = getURLParam('expire', url);
-  if (params[0]) {
-    // console.log(url);
-    localforage.getItem(DB_CACHED_URLS)
+  var expire = params[0];
+  if (expire == null) {
+    const segments = url.split('/');
+    var idx = segments.indexOf('expire');
+    if (idx > -1)
+      idx++;
+    if (isNaN(segments[idx]) === false)
+      expire = parseInt(segments[idx]);
+  }
+  if (expire) {
+    T_CACHED_URL.getItem(obj.id)
     .then((cached) => {
-      if (cached == null) {
+      if (cached == null)
         cached = {};
-      }
-      if (cached[obj.id] == null) {
-        cached[obj.id] = {};
-      }
-      cached[obj.id][obj.br] = {
+      cached[obj.bitrate] = {
         url: url,
-        expire: parseInt(params[0]) * 1000
-      }
-      localforage.setItem(DB_CACHED_URLS, cached);
-    });
+        expire: parseInt(expire) * 1000
+      };
+      return T_CACHED_URL.setItem(obj.id, cached);
+    })
+    .then((saved) => {
+      console.log('CACHED:', obj.id, saved);
+    })
+    .catch((err) => {
+      console.log(err);
+    })
   }
 }
 
-function getCachedURL(id, br) {
+function getCachedURL(id, bitrate = null) {
   return new Promise((resolve, reject) => {
-    localforage.getItem(DB_CACHED_URLS)
+    T_CACHED_URL.getItem(id)
     .then((cached) => {
       if (cached == null) {
-        cached = {};
+        reject("ID not exist");
+        return;
       }
-      if (cached[id] == null) {
-        return reject("ID not exist");
+      if (bitrate != null && cached[bitrate] == null) {
+        reject("Bitrate not exist");
+        return;
       }
-      if (cached[id][br] == null) {
-        return reject("Bitrate not exist");
+      if (bitrate === null) {
+        const keys = Object.keys(cached);
+        bitrate = parseInt(keys[keys.length - 1]);
       }
-      const now = new Date();
-      const expire = new Date(cached[id][br]['expire']);
-      if (now < expire) {
-        return resolve(cached[id][br]['url']);
+      if (new Date() < new Date(cached[bitrate]['expire'])) {
+        console.log('FOUND:', id, bitrate);
+        resolve(cached[bitrate]['url']);
+        return;
       }
-      return reject("Expired link");
+      reject("Expired link");
+    })
+    .catch((err) => {
+      reject(err);
     });
   });
 }
 
-window.addEventListener("load", function() {
+window.addEventListener("load", () => {
 
   const dummy = new Kai({
     name: '_dummy_',
@@ -191,195 +250,6 @@ window.addEventListener("load", function() {
   var TRACKLIST = [];
   var _TRACKLIST = [];
 
-  var MAIN_PLAYER = document.createElement("audio");
-  MAIN_PLAYER.volume = 1;
-
-  function initEqualizer() {
-    const CONTEXT = new AudioContext('content');
-
-    window['staticSource'] = CONTEXT.createGain();
-    window['balance'] = new StereoBalanceNode(CONTEXT);
-    window['preamp'] = CONTEXT.createGain();
-    var gainNode = CONTEXT.createGain();
-
-    const SOURCE = CONTEXT.createMediaElementSource(MAIN_PLAYER);
-
-    SOURCE.connect(window['staticSource']);
-    window['staticSource'].connect(window['preamp']);
-
-    const amps = [
-      { type: 'lowshelf', fValue: 60, gValue: 0, head: 'preamp' },
-      { type: 'peaking', fValue: 170, gValue: 0 },
-      { type: 'peaking', fValue: 310, gValue: 0 },
-      { type: 'peaking', fValue: 600, gValue: 0 },
-      { type: 'peaking', fValue: 1000, gValue: 0 },
-      { type: 'peaking', fValue: 3000, gValue: 0 },
-      { type: 'peaking', fValue: 6000, gValue: 0 },
-      { type: 'peaking', fValue: 12000, gValue: 0 },
-      { type: 'peaking', fValue: 14000, gValue: 0 },
-      { type: 'highshelf', fValue: 16000, gValue: 0 }
-    ];
-
-    amps.forEach((amp, idx) => {
-      const name = `hz${amp.fValue}`;
-      window[name] = CONTEXT.createBiquadFilter();
-      window[name].type = amp.type;
-      window[name].frequency.value = amp.fValue;
-      window[name].gain.value = amp.gValue;
-      if (idx === 0) {
-        window['preamp'].connect(window[name]);
-      } else {
-        const head = `hz${amps[idx - 1].fValue}`;
-        window[head].connect(window[name]);
-      }
-    });
-
-    window['hz16000'].connect(balance);
-    window['balance'].connect(gainNode);
-    gainNode.connect(CONTEXT.destination);
-  }
-
-  function enableEq() {
-    initEqualizer();
-    window['staticSource'].disconnect();
-    window['staticSource'].connect(window['preamp']);
-    localforage.setItem('EQUALIZER_STATUS', true);
-    loadCurrentEq();
-  }
-
-  function disableEq() {
-    if (window['staticSource'])
-      window['staticSource'].disconnect();
-    if (window['staticSource'])
-      window['staticSource'].connect(window['balance']);
-    localforage.setItem('EQUALIZER_STATUS', false);
-    MAIN_PLAYER.pause();
-    const TEMP = document.createElement("audio");
-    TEMP.volume = 1;
-    //TEMP.onratechange = MAIN_PLAYER.onratechange;
-    TEMP.ontimeupdate = MAIN_PLAYER.ontimeupdate;
-    TEMP.onpause = MAIN_PLAYER.onpause;
-    TEMP.onplay = MAIN_PLAYER.onplay;
-    TEMP.onloadeddata = MAIN_PLAYER.onloadeddata;
-    TEMP.onerror = MAIN_PLAYER.onerror;
-    TEMP.onended = MAIN_PLAYER.onended;
-    TEMP.currentTime = MAIN_PLAYER.currentTime;
-    const move = state.getState('TRACKLIST_IDX');
-    if (TRACKLIST[move]) {
-      state.setState('TRACKLIST_IDX', move);
-      playVideoByID(move);
-    }
-    MAIN_PLAYER = TEMP;
-  }
-
-  function toggleEqStatus() {
-    localforage.getItem('EQUALIZER_STATUS')
-    .then((status) => {
-      console.log('EQUALIZER_STATUS', status);
-      if (status == null || status == true) {
-        enableEq();
-      } else {
-        disableEq();
-      }
-    });
-  }
-
-  function changeEqStatus() {
-    localforage.getItem('EQUALIZER_STATUS')
-    .then((status) => {
-      if (status == null || status == true) {
-        status = false;
-      } else {
-        status = true;
-      }
-      localforage.setItem('EQUALIZER_STATUS', status)
-      .then(() => {
-        toggleEqStatus();
-        if (router) {
-          if (status) {
-            router.showToast('Equalizer On');
-          } else {
-            router.showToast('Equalizer Off');
-          }
-        }
-      });
-    });
-  }
-  window['toggleEqStatus'] = changeEqStatus;
-
-  const toPercent = (min, max, value) => {
-    return (value - min) / (max - min);
-  }
-
-  const percentToRange = (percent, min, max) => {
-    return min + Math.round(percent * (max - min));
-  }
-
-  const percentToIndex = (percent, length) => {
-    return percentToRange(percent, 0, length - 1);
-  }
-
-  const rebound = (oldMin, oldMax, newMin, newMax) => {
-    return (oldValue) => {
-      return percentToRange(toPercent(oldMin, oldMax, oldValue), newMin, newMax);
-    }
-  }
-
-  const normalizeEqBand = rebound(1, 64, 0, 100);
-
-  const setEqualizerBand = (filter, value) => {
-    var db = 0
-    if (filter === 'preamp') {
-      db = (value / 100) * 24 - 12;
-      window[filter]["gain"].value = Math.pow(10, db / 20);
-    } else {
-      db = (value / 100) * 24 - 12;
-      window[filter]["gain"].value = db;
-    }
-    return db;
-  }
-
-  function loadEq(name) {
-    var eql = EQL_PRESENT[name];
-    if (eql) {
-      for (var v in eql) {
-        const i = setEqualizerBand(v, normalizeEqBand(eql[v]));
-        EQUALIZER[v] = parseInt(i);
-      }
-      localforage.setItem('__EQUALIZER__', EQUALIZER);
-      localforage.setItem('__CURRENT_EQUALIZER__', name);
-    }
-  }
-
-  function toggleEq(filter, value) {
-    setEqualizerBand(filter, normalizeEqBand(RANGE[value]));
-    EQUALIZER[filter] = parseInt(value);
-    localforage.setItem('__EQUALIZER__', EQUALIZER);
-    localforage.removeItem('__CURRENT_EQUALIZER__');
-  }
-
-  function loadCurrentEq() {
-    localforage.getItem('__CURRENT_EQUALIZER__')
-    .then((cur) => {
-      if (cur) {
-        loadEq(cur);
-      } else {
-        localforage.getItem('__EQUALIZER__')
-        .then((eql) => {
-          if (!eql)
-            eql = EQUALIZER;
-          EQUALIZER = eql;
-          for (var v in eql) {
-            toggleEq(v, eql[v]);
-          }
-        });
-      }
-    });
-  }
-
-  toggleEqStatus();
-  loadCurrentEq();
-
   const state = new KaiState({
     CONFIGURATION: {},
     DATABASE: {},
@@ -389,6 +259,10 @@ window.addEventListener("load", function() {
     REPEAT: -1,
     SHUFFLE: false,
   });
+
+  var MAIN_PLAYER = document.createElement("audio");
+  MAIN_PLAYER.volume = 1;
+  MAIN_PLAYER.mozAudioChannelType = 'content';
 
   MAIN_PLAYER.onerror = (evt) => {
     console.log('MAIN_PLAYER', evt);
@@ -402,16 +276,16 @@ window.addEventListener("load", function() {
       const next = state.getState('TRACKLIST_IDX') + 1;
       if (TRACKLIST[next]) {
         state.setState('TRACKLIST_IDX', next);
-        playVideoByID(next);
+        playMainAudio(next);
       } else {
         state.setState('TRACKLIST_IDX', 0);
-        playVideoByID(0);
+        playMainAudio(0);
       }
     } else if (REPEAT === -1 && (state.getState('TRACKLIST_IDX') !== (TRACKLIST.length - 1))) {
       const next = state.getState('TRACKLIST_IDX') + 1;
       if (TRACKLIST[next]) {
         state.setState('TRACKLIST_IDX', next);
-        playVideoByID(next);
+        playMainAudio(next);
       }
     }
   }
@@ -494,21 +368,22 @@ window.addEventListener("load", function() {
     return REPEAT_BTN;
   }
 
-  localforage.getItem(DB_CONFIGURATION)
-  .then((CONFIGURATION) => {
-    if (CONFIGURATION == null) {
-      CONFIGURATION = {
-        mimeType: 'audio', // audio, audio/webm, audio/mp4
-      };
-    }
-    if (CONFIGURATION['mimeType'] == null) {
-      CONFIGURATION['mimeType'] = 'audio';
-    }
-    localforage.setItem(DB_CONFIGURATION, CONFIGURATION)
-    state.setState('CONFIGURATION', CONFIGURATION);
+  T_CONFIGURATION.keys()
+  .then((keys) => {
+    keys.forEach((key) => {
+      T_CONFIGURATION.getItem(key)
+      .then((value) => {
+        const conf = state.getState('CONFIGURATION');
+        conf[key] = value;
+        state.setState('CONFIGURATION', conf);
+        console.log(state.getState('CONFIGURATION'));
+      });
+    });
+  }).catch((err) => {
+    console.log(err);
   });
 
-  localforage.getItem(DB_NAME)
+  T_AUDIO.getItem(DB_AUDIO_CURSOR)
   .then((DATABASE) => {
     if (DATABASE == null) {
       DATABASE = {};
@@ -516,7 +391,7 @@ window.addEventListener("load", function() {
     state.setState('DATABASE', DATABASE);
   });
 
-  localforage.getItem(DB_PLAYLIST)
+  localforage.getItem(OLD_PLAYLIST)
   .then((PLAYLIST) => {
     if (PLAYLIST == null) {
       PLAYLIST = {};
@@ -530,7 +405,7 @@ window.addEventListener("load", function() {
       SHUFFLE = false;
     state.setState('SHUFFLE', SHUFFLE);
     localforage.setItem('SHUFFLE', SHUFFLE);
-    localforage.getItem(DB_PLAYING)
+    localforage.getItem(OLD_PLAYING)
     .then((playlist_id) => {
       if (playlist_id == null) {
         playDefaultCollection();
@@ -543,22 +418,22 @@ window.addEventListener("load", function() {
   function playDefaultCollection() {
     TRACKLIST = [];
     _TRACKLIST = [];
-    localforage.removeItem(DB_PLAYING);
+    localforage.removeItem(OLD_PLAYING);
     state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
-    localforage.getItem(DB_NAME)
+    T_AUDIO.getItem(DB_AUDIO_CURSOR)
     .then((tracks) => {
       for (var y in tracks) {
         TRACKLIST.push(tracks[y]);
         _TRACKLIST.push(tracks[y]);
       }
       shuffling();
-      playVideoByID(state.getState('TRACKLIST_IDX'));
+      playMainAudio(state.getState('TRACKLIST_IDX'));
     });
   }
 
   function playPlaylistCollection(id) {
-    localforage.getItem(DB_PLAYLIST)
+    localforage.getItem(OLD_PLAYLIST)
     .then((PLAYLIST) => {
       if (PLAYLIST == null) {
         PLAYLIST = {};
@@ -573,7 +448,7 @@ window.addEventListener("load", function() {
       return Promise.reject('Playlist not exist');
     })
     .then((PLYLST) => {
-      localforage.getItem(DB_NAME)
+      T_AUDIO.getItem(DB_AUDIO_CURSOR)
       .then((DATABASE) => {
         const collections = []
         if (DATABASE == null) {
@@ -589,9 +464,9 @@ window.addEventListener("load", function() {
           TRACKLIST = collections;
           _TRACKLIST = JSON.parse(JSON.stringify(collections));
           shuffling();
-          playVideoByID(state.getState('TRACKLIST_IDX'));
+          playMainAudio(state.getState('TRACKLIST_IDX'));
           router.showToast(`PLAYING ${TRACK_NAME}`);
-          localforage.setItem(DB_PLAYING, PLYLST.id);
+          localforage.setItem(OLD_PLAYING, PLYLST.id);
         }
       });
     })
@@ -611,14 +486,14 @@ window.addEventListener("load", function() {
       const MIME = state.getState('CONFIGURATION')['mimeType'] || 'audio';
       links.forEach((link) => {
         if (link.mimeType.indexOf(MIME) > -1) {
-          var br = parseInt(link.bitrate);
-          if (br > 999) {
-            br = Math.round(br/1000);
+          var bitrate = parseInt(link.bitrate);
+          if (bitrate > 999) {
+            bitrate = Math.round(bitrate/1000);
           }
-          link.br = br;
-          if (link.br >= quality) {
+          link.bitrate = bitrate;
+          if (link.bitrate >= quality) {
             obj = link;
-            quality = link.br;
+            quality = link.bitrate;
           }
         }
       });
@@ -628,7 +503,7 @@ window.addEventListener("load", function() {
       if (obj.url != null) {
         return Promise.resolve(obj.url);
       } else {
-        return getCachedURL(obj.id, obj.br)
+        return getCachedURL(obj.id, obj.bitrate)
         .then((_url) => {
           return Promise.resolve(_url);
         })
@@ -648,235 +523,117 @@ window.addEventListener("load", function() {
     });
   }
 
-  function playVideoByID(idx) {
+  function downloadAudio($router, audio) {
+    $router.showLoading();
+    getAudioStreamURL(audio.id)
+    .then((url) => {
+      $router.hideLoading();
+      $router.showLoading();
+      const down = new XMLHttpRequest({ mozSystem: true });
+      down.open('GET', url, true);
+      down.responseType = 'blob';
+      down.onload = (evt) => {
+        saveBlobToStorage(evt.currentTarget.response, `${audio.id}_${audio.title}`, (localPath) => {
+          if (localPath === false) {
+            $router.showToast("Error SAVING");
+          } else {
+            obj.local_stream = localPath;
+            // obj
+          }
+          $router.hideLoading();
+        });
+      }
+      down.onprogress = (evt) => {
+        if (evt.lengthComputable) {
+          var percentComplete = evt.loaded / evt.total * 100;
+          $router.showToast(`${percentComplete.toFixed(2)}%`);
+        }
+      }
+      down.onerror = (err) => {
+        $router.hideLoading();
+        $router.showToast("Error DOWNLOADING");
+      }
+      down.send();
+    })
+    .catch((e) => {
+      $router.hideLoading();
+      $router.showToast("Error GET");
+    });
+  }
+
+  function playMainAudio(idx) {
     if (TRACKLIST[idx] == null) {
       return
     }
 
-    function _fallback() {
-      // attempt download
-      getAudioStreamURL(TRACKLIST[idx].id)
-      .then((url) => {
-        // router.hideLoading();
-        router.showLoading();
-        const down = new XMLHttpRequest({ mozSystem: true });
-        down.open('GET', url, true);
-        down.responseType = 'blob';
-        down.onload = (evt) => {
-          saveBlobToStorage(evt.currentTarget.response, `${TRACKLIST[idx].id}_${TRACKLIST[idx]._title || TRACKLIST[idx].title}`, (localPath) => {
-            if (localPath === false) {
-              router.showToast("Error SAVING");
-            } else {
-              TRACKLIST[idx].local_path = localPath;
-              playVideoByID(idx);
-              localforage.getItem(DB_NAME)
-              .then((DATABASE) => {
-                if (DATABASE == null) {
-                  DATABASE = {};
-                }
-                DATABASE[TRACKLIST[idx].id] = TRACKLIST[idx];
-                localforage.setItem(DB_NAME, DATABASE)
-                .then(() => {
-                  router.showToast('Saved');
-                  return localforage.getItem(DB_NAME);
-                })
-                .then((UPDATED_DATABASE) => {
-                  state.setState('DATABASE', UPDATED_DATABASE);
-                })
-                .catch((err) => {
-                  console.log(err);
-                  router.showToast(err.toString());
-                });
-              })
-            }
-            router.hideLoading();
-          });
-        }
-        down.onprogress = (evt) => {
-          if (evt.lengthComputable) {
-            var percentComplete = evt.loaded / evt.total * 100;
-            router.showToast(`${percentComplete.toFixed(2)}%`);
-          }
-        }
-        down.onerror = (err) => {
-          router.hideLoading();
-          router.showToast("Error DOWNLOADING");
-        }
-        down.send();
-      })
-      .catch((e) => {
-        router.hideLoading();
-        router.showToast("Error GET");
-      });
-    }
-
-    if (TRACKLIST[idx].local_path) {
-      var request = SDCARD.get(TRACKLIST[idx].local_path);
+    if (false) { // TRACKLIST[idx].local_stream
+      var request = SDCARD.get(TRACKLIST[idx].local_stream);
       request.onsuccess = (file) => {
         MAIN_PLAYER.mozAudioChannelType = 'content';
         MAIN_PLAYER.src = URL.createObjectURL(file.target.result);
         MAIN_PLAYER.play();
       }
-      request.onerror = ( error) => {
-        _fallback();
+      request.onerror = (error) => {
         console.warn("Unable to get the file: " + error.toString());
       }
     } else {
-      _fallback();
-    }
-  }
-
-  function playMainAudio(obj) {
-    if (obj.url != null) {
-      // console.log(obj.url);
-      MAIN_PLAYER.mozAudioChannelType = 'content';
-      MAIN_PLAYER.src = obj.url;
-      MAIN_PLAYER.play();
-    } else {
-      getCachedURL(obj.id, obj.br)
-      .then((_url) => {
-        // console.log("From Cached" ,_url);
+      getCachedURL(TRACKLIST[idx].id)
+      .then((url) => {
+        console.log(url);
         MAIN_PLAYER.mozAudioChannelType = 'content';
-        MAIN_PLAYER.src = _url;
+        MAIN_PLAYER.src = url;
         MAIN_PLAYER.play();
       })
-      .catch((_err) => {
-        // console.log(_err);
-        if (router && router.loading) {
-          router.showLoading();
-        }
-        decryptSignatureV2(obj.signatureCipher, obj.player)
+      .catch((err) => {
+        console.log(err);
+        getAudioStreamURL(TRACKLIST[idx].id)
         .then((url) => {
-          cacheURL(obj, url);
-          // console.log("From Server" ,url);
+          console.log(url);
           MAIN_PLAYER.mozAudioChannelType = 'content';
           MAIN_PLAYER.src = url;
           MAIN_PLAYER.play();
         })
         .catch((err) => {
-          MAIN_PLAYER.pause();
           console.log(err);
-        })
-        .finally(() => {
-          if (router && router.loading) {
-            router.hideLoading();
-          }
-        })
-      });
-    }
-  }
-
-  function playMiniAudio(_this, obj, debug = false) {
-    if (debug) {
-      //debug start
-        _this.$router.showLoading();
-      decryptSignatureV2(obj.signatureCipher, obj.player)
-      .then((url) => {
-        cacheURL(obj, url);
-        console.log("From Server" ,url);
-        miniPlayer(_this.$router, url, _this.methods.renderSoftKeyLCR);
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        _this.$router.hideLoading();
-      });
-      return
-      //debug end
-    }
-    if (obj.url != null) {
-      // console.log(obj.url);
-      miniPlayer(_this.$router, obj.url, _this.methods.renderSoftKeyLCR);
-    } else {
-      _this.$router.showLoading();
-      getCachedURL(obj.id, obj.br)
-      .then((_url) => {
-        _this.$router.hideLoading();
-        // console.log("From Cached" ,_url);
-        miniPlayer(_this.$router, _url, _this.methods.renderSoftKeyLCR);
-      })
-      .catch((_err) => {
-        console.log(_err);
-        decryptSignatureV2(obj.signatureCipher, obj.player)
-        .then((url) => {
-          cacheURL(obj, url);
-          // console.log("From Server" ,url);
-          miniPlayer(_this.$router, url, _this.methods.renderSoftKeyLCR);
-        })
-        .catch((err) => {
-          console.log(err);
-        })
-        .finally(() => {
-          _this.$router.hideLoading();
         });
       });
     }
   }
 
-  const equalizer_panel = new Kai({
-    name: '_equalizer_panel_',
-    data: {
-      title: '_equalizer_panel_',
-      filters: []
-    },
-    verticalNavClass: '.equalizerPanelNav',
-    templateUrl: document.location.origin + '/templates/equalizer_panel.html',
-    mounted: function() {
-      this.$router.setHeaderTitle('Equalizer Panel');
-      const filters = []
-      for (var x in EQUALIZER) {
-        filters.push({ name: x, value: EQUALIZER[x] });
-      }
-      this.setData({ filters: filters });
-    },
-    unmounted: function() {},
-    methods: {},
-    softKeyText: { left: 'Reset', center: '', right: '' },
-    softKeyListener: {
-      left: function() {
-        for (var i=0;i<11;i++) {
-          this.data.filters[i].value = 0;
-          toggleEq(this.data.filters[i].name, this.data.filters[i].value);
-        }
-        this.render();
-      },
-      center: function() {},
-      right: function() {}
-    },
-    dPadNavListener: {
-      arrowUp: function() {
-        this.navigateListNav(-1);
-      },
-      arrowDown: function() {
-        this.navigateListNav(1);
-      },
-      arrowLeft: function() {
-        const cur = this.data.filters[this.verticalNavIndex];
-        if (!cur ||  cur.value === -12)
-          return
-        this.data.filters[this.verticalNavIndex].value = cur.value - 1
-        this.render();
-        toggleEq(cur.name, this.data.filters[this.verticalNavIndex].value);
-      },
-      arrowRight: function() {
-        const cur = this.data.filters[this.verticalNavIndex];
-        if (!cur ||  cur.value === 12)
-          return
-        this.data.filters[this.verticalNavIndex].value = cur.value + 1
-        this.render();
-        toggleEq(cur.name, this.data.filters[this.verticalNavIndex].value);
-      }
+  function playMiniAudio($router, obj) {
+    if (obj.url != null) {
+      miniPlayer($router, obj.url);
+    } else {
+      $router.showLoading();
+      getCachedURL(obj.id, obj.bitrate)
+      .then((_url) => {
+        $router.hideLoading();
+        miniPlayer($router, _url);
+      })
+      .catch((_err) => {
+        console.log(_err);
+        decryptSignatureV2(obj.signatureCipher, obj.player)
+        .then((url) => {
+          putCachedURL(obj, url);
+          miniPlayer($router, url);
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          $router.hideLoading();
+        });
+      });
     }
-  });
+  }
 
-  const miniPlayer = function($router, url, cb = () => {}) {
+  const miniPlayer = function($router, url) {
 
+    var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION;
     const MINI_PLAYER = document.createElement("audio");
     MINI_PLAYER.volume = 1;
     MINI_PLAYER.mozAudioChannelType = 'content';
 
-    var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION;
     $router.showBottomSheet(
       new Kai({
         name: 'miniPlayer',
@@ -987,12 +744,12 @@ window.addEventListener("load", function() {
     );
   }
 
-  const addOrEditPlaylistDialog = function(_this, name = '', id = null) {
-    const playlistDialog = Kai.createDialog((id ? 'Edit' : 'Add') + ' Playlist', `<div><input id="playlist-name" placeholder="Enter playlist name" class="kui-input" type="text" value=""/></div>`, null, '', undefined, '', undefined, '', undefined, undefined, _this.$router);
+  const playlistEditor = function(scope, name = '', id = null) {
+    const playlistDialog = Kai.createDialog((id ? 'Edit' : 'Add') + ' Playlist', `<div><input id="playlist-name" placeholder="Enter playlist name" class="kui-input" type="text" value=""/></div>`, null, '', undefined, '', undefined, '', undefined, undefined, scope.$router);
     playlistDialog.mounted = () => {
       setTimeout(() => {
         setTimeout(() => {
-          _this.$router.setSoftKeyText('Cancel' , '', 'Save');
+          scope.$router.setSoftKeyText('Cancel' , '', 'Save');
           INPUT.value = name;
         }, 103);
         const INPUT = document.getElementById('playlist-name');
@@ -1005,25 +762,25 @@ window.addEventListener("load", function() {
             case 'Backspace':
             case 'EndCall':
               if (document.activeElement.value.length === 0) {
-                _this.$router.hideBottomSheet();
+                scope.$router.hideBottomSheet();
                 setTimeout(() => {
-                  _this.methods.renderSoftKeyLCR();
+                  scope.methods.renderSoftKeyLCR();
                   INPUT.blur();
                 }, 100);
               }
               break
             case 'SoftRight':
-              _this.$router.hideBottomSheet();
+              scope.$router.hideBottomSheet();
               setTimeout(() => {
-                _this.methods.renderSoftKeyLCR();
+                scope.methods.renderSoftKeyLCR();
                 INPUT.blur();
-                _this.methods.addOrEditPlaylist(INPUT.value, id);
+                scope.methods.playlistEditor(INPUT.value, id);
               }, 100);
               break
             case 'SoftLeft':
-              _this.$router.hideBottomSheet();
+              scope.$router.hideBottomSheet();
               setTimeout(() => {
-                _this.methods.renderSoftKeyLCR();
+                scope.methods.renderSoftKeyLCR();
                 INPUT.blur();
               }, 100);
               break
@@ -1041,7 +798,7 @@ window.addEventListener("load", function() {
         INPUT.focus();
       }
     }
-    _this.$router.showBottomSheet(playlistDialog);
+    scope.$router.showBottomSheet(playlistDialog);
   }
 
   const playlist = new Kai({
@@ -1079,13 +836,13 @@ window.addEventListener("load", function() {
         this.setData({ playlists: playlists });
         this.methods.renderSoftKeyLCR();
       },
-      addOrEditPlaylist: function(name = '', id = null) {
+      playlistEditor: function(name = '', id = null) {
         var oldName = '';
         name = name.trim();
         if (name.length === 0) {
           this.$router.showToast('Playlist name is required');
         } else {
-          localforage.getItem(DB_PLAYLIST)
+          localforage.getItem(OLD_PLAYLIST)
           .then((PLAYLIST) => {
             if (PLAYLIST == null) {
               PLAYLIST = {};
@@ -1098,10 +855,10 @@ window.addEventListener("load", function() {
               const obj = { id: pid, name: name, collections: [] };
               PLAYLIST[pid] = obj;
             }
-            localforage.setItem(DB_PLAYLIST, PLAYLIST);
+            localforage.setItem(OLD_PLAYLIST, PLAYLIST);
           })
           .then(() => {
-            return localforage.getItem(DB_PLAYLIST);
+            return localforage.getItem(OLD_PLAYLIST);
           })
           .then((UPDATED_PLAYLIST) => {
             var msg = `${name} added to Playlist`;
@@ -1122,7 +879,7 @@ window.addEventListener("load", function() {
     softKeyText: { left: 'Add', center: '', right: '' },
     softKeyListener: {
       left: function() {
-        addOrEditPlaylistDialog(this, '', null);
+        playlistEditor(this, '', null);
       },
       center: function() {
         const _selected = this.data.playlists[this.verticalNavIndex];
@@ -1148,7 +905,7 @@ window.addEventListener("load", function() {
                   var collections = [];
                   cur.collections.forEach((v) => {
                     DB[v].checked = true;
-                    DB[v].text = DB[v].title || DB[v]._title;
+                    DB[v].text = DB[v].title || DB[v].audio_title;
                     collections.push(DB[v]);
                   });
                   setTimeout(() => {
@@ -1161,9 +918,9 @@ window.addEventListener("load", function() {
                       });
                       // console.log(_tracklist);
                       PLYLS[_selected.id].collections = _tracklist;
-                      localforage.setItem(DB_PLAYLIST, PLYLS)
+                      localforage.setItem(OLD_PLAYLIST, PLYLS)
                       .then(() => {
-                        return localforage.getItem(DB_PLAYLIST);
+                        return localforage.getItem(OLD_PLAYLIST);
                       })
                       .then((UPDATED_PLAYLIST) => {
                         this.$router.showToast('DONE');
@@ -1183,15 +940,15 @@ window.addEventListener("load", function() {
                 }
               }
             } else if (selected.text === 'Update') {
-              addOrEditPlaylistDialog(this, _selected.name, _selected.id);
+              playlistEditor(this, _selected.name, _selected.id);
             } else if (selected.text === 'Delete'){
               const PLYLS = this.$state.getState('PLAYLIST');
               if (PLYLS[_selected.id]) {
                 this.$router.showDialog('Delete', `Are you sure to remove ${_selected.name} ?`, null, 'Yes', () => {
                   delete PLYLS[_selected.id];
-                  localforage.setItem(DB_PLAYLIST, PLYLS)
+                  localforage.setItem(OLD_PLAYLIST, PLYLS)
                   .then(() => {
-                    return localforage.getItem(DB_PLAYLIST);
+                    return localforage.getItem(OLD_PLAYLIST);
                   })
                   .then((UPDATED_PLAYLIST) => {
                     this.$router.showToast(`${_selected.name} deleted`);
@@ -1235,124 +992,83 @@ window.addEventListener("load", function() {
     },
   });
 
-  const saveVideoID = function ($router, video, isUpdate = false) {
-    localforage.getItem(DB_NAME)
+  const audioMetadataEditor = function ($router, audio, isUpdate = false) {
+    T_AUDIO.getItem(DB_AUDIO_CURSOR)
     .then((DATABASE) => {
       if (DATABASE == null) {
         DATABASE = {};
       }
-      if (DATABASE[video.id] && !isUpdate) {
+      if (DATABASE[audio.id] && !isUpdate) {
         $router.showToast('Already exist inside DB');
       } else {
         $router.push(
           new Kai({
-            name: 'saveVideo',
+            name: 'audioEditor',
             data: {
-              title: isUpdate ? (video.title || '') : '',
-              artist: isUpdate ? (video.artist || '') : '',
-              album: isUpdate ? (video.album || '') : '',
-              genre: isUpdate ? (video.genre || '') : '',
-              year: isUpdate ? (video.year || '') : '',
-              track: isUpdate ? (video.track || '') : '',
+              title: isUpdate ? (audio.title || '') : '',
+              artist: isUpdate ? (audio.artist || '') : '',
+              album: isUpdate ? (audio.album || '') : '',
+              genre: isUpdate ? (audio.genre || '') : '',
+              year: isUpdate ? (audio.year || '') : '',
+              track: isUpdate ? (audio.track || '') : '',
             },
-            verticalNavClass: '.saveVideoNav',
-            templateUrl: document.location.origin + '/templates/saveVideo.html',
+            verticalNavClass: '.audioEditorNav',
+            templateUrl: document.location.origin + '/templates/audioEditor.html',
             mounted: function() {
-              this.$router.setHeaderTitle(`Metadata #${video.id}`);
+              this.$router.setHeaderTitle(`Metadata #${audio.id}`);
             },
             unmounted: function() {},
             methods: {
               submit: function() {
-                var obj = {
-                  id: video.id,
-                  _title: video._title || video.title,
-                  duration: video.duration,
+                const metadata = {
+                  id: audio.id,
+                  audio_title: audio.audio_title || audio.title,
+                  duration: audio.duration,
                   title: false,
                   artist: false,
                   album: false,
                   genre: false,
                   year: false,
                   track: false,
+                  local_stream: audio.local_stream || false,
                 };
                 if (document.getElementById('title').value.trim().length > 0) {
-                  obj.title = document.getElementById('title').value.trim();
+                  metadata.title = document.getElementById('title').value.trim();
                 }
                 if (document.getElementById('artist').value.trim().length > 0) {
-                  obj.artist = document.getElementById('artist').value.trim();
+                  metadata.artist = document.getElementById('artist').value.trim();
                 }
                 if (document.getElementById('album').value.trim().length > 0) {
-                  obj.album = document.getElementById('album').value.trim();
+                  metadata.album = document.getElementById('album').value.trim();
                 }
                 if (document.getElementById('genre').value.trim().length > 0) {
-                  obj.genre = document.getElementById('genre').value.trim();
+                  metadata.genre = document.getElementById('genre').value.trim();
                 }
                 if (document.getElementById('year').value.trim().length > 0) {
                   try {
-                    obj.year = JSON.parse(document.getElementById('year').value.trim());
+                    metadata.year = JSON.parse(document.getElementById('year').value.trim());
                   } catch(e){}
                 }
                 if (document.getElementById('track').value.trim().length > 0) {
                   try {
-                    obj.year = JSON.parse(document.getElementById('track').value.trim());
+                    metadata.year = JSON.parse(document.getElementById('track').value.trim());
                   } catch(e){}
                 }
 
-                function exec(_obj) {
-                  DATABASE[video.id] = _obj;
-                  localforage.setItem(DB_NAME, DATABASE)
-                  .then(() => {
-                    $router.showToast('Saved');
-                    $router.pop();
-                    return localforage.getItem(DB_NAME);
-                  })
-                  .then((UPDATED_DATABASE) => {
-                    state.setState('DATABASE', UPDATED_DATABASE);
-                  })
-                  .catch((err) => {
-                    console.log(err);
-                    $router.showToast(err.toString());
-                  });
-                }
-
-                if (!isUpdate || video.local_path == null) {
-                  $router.showLoading();
-                  getAudioStreamURL(video.id)
-                  .then((url) => {
-                    $router.hideLoading();
-                    $router.showLoading();
-                    const down = new XMLHttpRequest({ mozSystem: true });
-                    down.open('GET', url, true);
-                    down.responseType = 'blob';
-                    down.onload = (evt) => {
-                      saveBlobToStorage(evt.currentTarget.response, `${video.id}_${video.title}`, (localPath) => {
-                        if (localPath === false) {
-                          $router.showToast("Error SAVING");
-                        } else {
-                          obj.local_path = localPath;
-                          exec(obj);
-                        }
-                        $router.hideLoading();
-                      });
-                    }
-                    down.onprogress = (evt) => {
-                      if (evt.lengthComputable) {
-                        var percentComplete = evt.loaded / evt.total * 100;
-                        $router.showToast(`${percentComplete.toFixed(2)}%`);
-                      }
-                    }
-                    down.onerror = (err) => {
-                      $router.hideLoading();
-                      $router.showToast("Error DOWNLOADING");
-                    }
-                    down.send();
-                  })
-                  .catch((e) => {
-                    $router.hideLoading();
-                    $router.showToast("Error GET");
-                  });
-                } else {
-                  exec(obj);
-                }
+                DATABASE[audio.id] = metadata;
+                T_AUDIO.setItem(DB_AUDIO_CURSOR, DATABASE)
+                .then(() => {
+                  $router.showToast('Saved');
+                  $router.pop();
+                  return T_AUDIO.getItem(DB_AUDIO_CURSOR);
+                })
+                .then((UPDATED_DATABASE) => {
+                  state.setState('DATABASE', UPDATED_DATABASE);
+                })
+                .catch((err) => {
+                  console.log(err);
+                  $router.showToast(err.toString());
+                });
               }
             },
             softKeyText: { left: '', center: '', right: '' },
@@ -1410,19 +1126,19 @@ window.addEventListener("load", function() {
           var audio = [];
           links.forEach((link) => {
             if (link.mimeType.indexOf('audio') > -1) {
-              var br = parseInt(link.bitrate);
-              if (br > 999) {
-                br = Math.round(br/1000);
+              var bitrate = parseInt(link.bitrate);
+              if (bitrate > 999) {
+                bitrate = Math.round(bitrate/1000);
               }
-              link.br = br;
-              link.text = link.mimeType + '(' + br.toString() + 'kbps)';
+              link.bitrate = bitrate;
+              link.text = link.mimeType + '(' + bitrate.toString() + 'kbps)';
               audio.push(link);
             }
           });
           audio.sort((a, b) => {
-            if (a['br'] > b['br'])
+            if (a['bitrate'] > b['bitrate'])
               return 1;
-            else if (a['br'] < b['br'])
+            else if (a['bitrate'] < b['bitrate'])
               return -1;
             return 0;
           });
@@ -1440,7 +1156,7 @@ window.addEventListener("load", function() {
       },
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
-          playMiniAudio(this, selected);
+          playMiniAudio(this.$router, selected);
           // console.log(selected);
         }, () => {
           setTimeout(() => {
@@ -1450,13 +1166,13 @@ window.addEventListener("load", function() {
       },
       search: function(q = '') {
         this.$router.showLoading();
-        searchVideo(q)
+        searchAudio(q)
         .then((data) => {
           this.verticalNavIndex = -1;
           var videos = [];
           data.results.forEach((t) => {
             if (t.video) {
-              t.video.isVideo = true;
+              t.video.isAudio = true;
               videos.push(t.video);
             }
           });
@@ -1477,12 +1193,12 @@ window.addEventListener("load", function() {
       },
       nextPage: function() {
         this.$router.showLoading();
-        searchVideo("", this.data.key, this.data.nextPageToken)
+        searchAudio("", this.data.key, this.data.nextPageToken)
         .then((data) => {
           var videos = [];
           data.results.forEach((t) => {
             if (t.video) {
-              t.video.isVideo = true;
+              t.video.isAudio = true;
               videos.push(t.video);
             }
           });
@@ -1502,12 +1218,12 @@ window.addEventListener("load", function() {
       },
       processResult: function(videos) {
         const last = this.data.results[this.data.results.length - 1];
-        if (last && !last.isVideo) {
+        if (last && !last.isAudio) {
           this.data.results.pop();
         }
         const merged = [...this.data.results, ...videos];
         if (this.data.nextPageToken) {
-          merged.push({ isVideo: false });
+          merged.push({ isAudio: false });
         }
         this.setData({ results: merged });
         this.methods.renderSoftKeyLCR();
@@ -1521,7 +1237,7 @@ window.addEventListener("load", function() {
         if (this.verticalNavIndex > -1) {
           const selected = this.data.results[this.verticalNavIndex];
           if (selected) {
-            if (selected.isVideo) {
+            if (selected.isAudio) {
               this.$router.setSoftKeyCenterText('PLAY');
               this.$router.setSoftKeyRightText('Save');
             } else {
@@ -1591,7 +1307,7 @@ window.addEventListener("load", function() {
       center: function() {
         const selected = this.data.results[this.verticalNavIndex];
         if (selected) {
-          if (selected.isVideo)
+          if (selected.isAudio)
             this.methods.selected(selected);
           else
             this.methods.nextPage();
@@ -1600,8 +1316,8 @@ window.addEventListener("load", function() {
       right: function() {
         const selected = this.data.results[this.verticalNavIndex];
         if (selected) {
-          if (selected.isVideo)
-            saveVideoID(this.$router, selected);
+          if (selected.isAudio)
+            audioMetadataEditor(this.$router, selected);
         }
       }
     },
@@ -1653,19 +1369,19 @@ window.addEventListener("load", function() {
           var audio = [];
           links.forEach((link) => {
             if (link.mimeType.indexOf('audio') > -1) {
-              var br = parseInt(link.bitrate);
-              if (br > 999) {
-                br = Math.round(br/1000);
+              var bitrate = parseInt(link.bitrate);
+              if (bitrate > 999) {
+                bitrate = Math.round(bitrate/1000);
               }
-              link.br = br;
-              link.text = link.mimeType + '(' + br.toString() + 'kbps)';
+              link.bitrate = bitrate;
+              link.text = link.mimeType + '(' + bitrate.toString() + 'kbps)';
               audio.push(link);
             }
           });
           audio.sort((a, b) => {
-            if (a['br'] > b['br'])
+            if (a['bitrate'] > b['bitrate'])
               return 1;
-            else if (a['br'] < b['br'])
+            else if (a['bitrate'] < b['bitrate'])
               return -1;
             return 0;
           });
@@ -1683,7 +1399,7 @@ window.addEventListener("load", function() {
       },
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
-          playMiniAudio(this, selected);
+          playMiniAudio(this.$router, selected);
           // console.log(selected);
         }, () => {
           setTimeout(() => {
@@ -1717,9 +1433,9 @@ window.addEventListener("load", function() {
                 }
               }
             });
-            localforage.setItem(DB_PLAYLIST, src)
+            localforage.setItem(OLD_PLAYLIST, src)
             .then(() => {
-              return localforage.getItem(DB_PLAYLIST);
+              return localforage.getItem(OLD_PLAYLIST);
             })
             .then((UPDATED_PLAYLIST) => {
               this.$router.showToast('DONE');
@@ -1735,12 +1451,12 @@ window.addEventListener("load", function() {
           }, 0);
         }
       },
-      deleteVideo: function(video) {
+      deleteAudio: function(video) {
         var affected = [];
         const DB = this.$state.getState('DATABASE');
         const PLYLS = this.$state.getState('PLAYLIST');
         if (DB[video.id]) {
-          this.$router.showDialog('Delete', `Are you sure to remove ${video._title} ?`, null, 'Yes', () => {
+          this.$router.showDialog('Delete', `Are you sure to remove ${video.audio_title} ?`, null, 'Yes', () => {
             for (var y in PLYLS) {
               const idx = PLYLS[y].collections.indexOf(video.id);
               if (idx > -1){
@@ -1749,9 +1465,9 @@ window.addEventListener("load", function() {
               }
             }
             if (affected.length > 0) {
-              localforage.setItem(DB_PLAYLIST, PLYLS)
+              localforage.setItem(OLD_PLAYLIST, PLYLS)
               .then(() => {
-                return localforage.getItem(DB_PLAYLIST);
+                return localforage.getItem(OLD_PLAYLIST);
               })
               .then((UPDATED_PLAYLIST) => {
                 this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
@@ -1761,9 +1477,9 @@ window.addEventListener("load", function() {
               });
             }
             delete DB[video.id];
-            localforage.setItem(DB_NAME, DB)
+            T_AUDIO.setItem(DB_AUDIO_CURSOR, DB)
             .then(() => {
-              return localforage.getItem(DB_NAME);
+              return T_AUDIO.getItem(DB_AUDIO_CURSOR);
             })
             .then((UPDATED_DATABASE) => {
               this.$router.showToast('Deleted');
@@ -1786,7 +1502,7 @@ window.addEventListener("load", function() {
         const src = this.$state.getState('DATABASE');
         const bulk_results = [];
         for (var x in src) {
-          src[x].isVideo = true
+          src[x].isAudio = true
           bulk_results.push(src[x]);
         }
         this.data.results = [];
@@ -1801,8 +1517,8 @@ window.addEventListener("load", function() {
           const src = this.$state.getState('DATABASE');
           const bulk_results = [];
           for (var x in src) {
-            src[x].isVideo = true;
-            if (src[x]._title.toLowerCase().indexOf(keyword.toLowerCase()) > -1) {
+            src[x].isAudio = true;
+            if (src[x].audio_title.toLowerCase().indexOf(keyword.toLowerCase()) > -1) {
               bulk_results.push(src[x]);
             } else {
               const fields = ['title', 'artist', 'album', 'genre', 'year'];
@@ -1823,7 +1539,7 @@ window.addEventListener("load", function() {
       },
       processResult: function(page = 0) {
         const last = this.data.results[this.data.results.length - 1];
-        if (last && !last.isVideo) {
+        if (last && !last.isAudio) {
           this.data.results.pop();
         }
         var totalPages = Math.floor(this.data.bulk_results.length / this.data.perPage);
@@ -1839,7 +1555,7 @@ window.addEventListener("load", function() {
         this.data.nextPage = next;
         const merged = [...this.data.results, ...this.data.bulk_results.slice(start, end)];
         if (this.data.nextPage) {
-          merged.push({ isVideo: false });
+          merged.push({ isAudio: false });
         }
         this.setData({ results: merged });
         this.methods.renderSoftKeyLCR();
@@ -1852,7 +1568,7 @@ window.addEventListener("load", function() {
         if (this.verticalNavIndex > -1) {
           const selected = this.data.results[this.verticalNavIndex];
           if (selected) {
-            if (selected.isVideo) {
+            if (selected.isAudio) {
               this.$router.setSoftKeyText('Search', 'PLAY', 'Action');
             } else {
               this.$router.setSoftKeyText('Search', 'SELECT', '');
@@ -1921,7 +1637,7 @@ window.addEventListener("load", function() {
       center: function() {
         const selected = this.data.results[this.verticalNavIndex];
         if (selected) {
-          if (selected.isVideo)
+          if (selected.isAudio)
             this.methods.selected(selected);
           else {
             if (this.data.nextPage != null)
@@ -1932,7 +1648,7 @@ window.addEventListener("load", function() {
       right: function() {
         const _selected = this.data.results[this.verticalNavIndex];
         if (_selected) {
-          if (_selected.isVideo) {
+          if (_selected.isAudio) {
             const menus = [
               { text: 'Play All' },
               { text: 'Add/Remove from Playlist' },
@@ -1941,11 +1657,11 @@ window.addEventListener("load", function() {
             ]
             this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
               if (selected.text === 'Update Metadata') {
-                saveVideoID(this.$router, _selected, true);
+                audioMetadataEditor(this.$router, _selected, true);
               } else if (selected.text === 'Add/Remove from Playlist') {
                 this.methods.presentInPlaylist(_selected);
               } else if (selected.text === 'Delete') {
-                this.methods.deleteVideo(_selected);
+                this.methods.deleteAudio(_selected);
               } else if (selected.text === 'Play All') {
                 playDefaultCollection();
               }
@@ -2107,7 +1823,7 @@ window.addEventListener("load", function() {
         const T = TRACKLIST[val];
         if (T) {
           this.setData({
-            title: T.title || T._title,
+            title: T.title || T.audio_title,
             artist: T.artist || 'UNKNOWN',
             album: T.album || 'UNKNOWN',
             genre: T.genre || 'UNKNOWN',
@@ -2134,14 +1850,14 @@ window.addEventListener("load", function() {
       left: function() {
         var tracklist = []
         TRACKLIST.forEach((t, i) => {
-          t.text = `${i+1} - ${t.title || t._title}`;
+          t.text = `${i+1} - ${t.title || t.audio_title}`;
           t.idx = i;
           tracklist.push(t);
         });
         this.$router.showOptionMenu(TRACK_NAME, tracklist, 'Select', (selected) => {
           if (TRACKLIST[selected.idx]) {
             this.$state.setState('TRACKLIST_IDX', selected.idx);
-            playVideoByID(selected.idx);
+            playMainAudio(selected.idx);
           }
         }, () => {}, this.$state.getState('TRACKLIST_IDX'));
       },
@@ -2153,80 +1869,50 @@ window.addEventListener("load", function() {
         }
       },
       right: function() {
-        localforage.getItem('EQUALIZER_STATUS')
-        .then((eq_status) => {
-          const menus = [
-            { text: 'Search' },
-            { text: 'Local Database' },
-            { text: 'Playlist' },
-            { text: 'Preferred Mime' },
-          ]
-          if (eq_status) {
-            menus.push({ text: 'Built-in Equalizer' }, { text: 'Equalizer Panel' }, { text: 'Disable Equalizer' });
-          } else {
-            menus.push({ text: 'Enable Equalizer' });
+        const menus = [
+          { text: 'Search' },
+          { text: 'Local Database' },
+          { text: 'Playlist' },
+          { text: 'Preferred Mime' },
+          { text: 'Clear Caches' },
+          { text: 'Exit' }
+        ]
+        this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
+          if (selected.text === 'Search') {
+            this.$router.push('search');
+          } else if (selected.text == 'Disable Equalizer' || selected.text == 'Enable Equalizer') {
+            changeEqStatus();
+          } else if (selected.text === 'Local Database') {
+            this.$router.push('database');
+          } else if (selected.text === 'Playlist') {
+            this.$router.push('playlist');
+          } else if (selected.text === 'Preferred Mime') {
+            const mime = this.$state.getState('CONFIGURATION')['mimeType'];
+            const opts = [
+              { "text": "audio", "checked": mime === "audio" },
+              { "text": "audio/webm", "checked": mime === "audio/webm" },
+              { "text": "audio/mp4", "checked": mime === "audio/mp4" }
+            ];
+            const idx = opts.findIndex((opt) => {
+              return opt.text === mime;
+            });
+            this.$router.showSingleSelector('Preferred Mime', opts, 'Select', (selected) => {
+              T_CONFIGURATION.setItem('mimeType', selected.text)
+              .then((value) => {
+                this.$state.setState('mimeType', value);
+              });
+            }, 'Cancel', null, undefined, idx);
+          } else if (selected.text === 'Clear Caches') {
+            T_CACHED_URL.clear()
+            .finally(() => {
+              this.$router.showToast('DONE');
+            });
+          } else if (selected.text === 'Exit') {
+            window.close();
           }
-          menus.push({ text: 'Clear Caches' }, { text: 'Exit' });
-          this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
-            if (selected.text === 'Search') {
-              this.$router.push('search');
-            } else if (selected.text == 'Disable Equalizer' || selected.text == 'Enable Equalizer') {
-              changeEqStatus();
-            } else if (selected.text === 'Local Database') {
-              this.$router.push('database');
-            } else if (selected.text === 'Playlist') {
-              this.$router.push('playlist');
-            } else if (selected.text === 'Preferred Mime') {
-              const mime = this.$state.getState('CONFIGURATION')['mimeType'];
-              const opts = [
-                { "text": "audio", "checked": mime === "audio" },
-                { "text": "audio/webm", "checked": mime === "audio/webm" },
-                { "text": "audio/mp4", "checked": mime === "audio/mp4" }
-              ];
-              const idx = opts.findIndex((opt) => {
-                return opt.text === mime;
-              });
-              this.$router.showSingleSelector('Preferred Mime', opts, 'Select', (selected) => {
-                const conf = this.$state.getState('CONFIGURATION');
-                conf['mimeType'] = selected.text;
-                localforage.setItem(DB_CONFIGURATION, conf)
-                .then(() => {
-                  return localforage.getItem(DB_CONFIGURATION);
-                })
-                .then((CONFIGURATION) => {
-                  this.$state.setState('CONFIGURATION', CONFIGURATION);
-                });
-              }, 'Cancel', null, undefined, idx);
-            } else if (selected.text === 'Built-in Equalizer') {
-              localforage.getItem('__CURRENT_EQUALIZER__')
-              .then((cur) => {
-                const opts = [];
-                for (var x in EQL_PRESENT) {
-                  opts.push({ "text": x, "checked": x === cur });
-                }
-                const idx = opts.findIndex((opt) => {
-                  return opt.text === cur;
-                });
-                this.$router.showSingleSelector('Built-in Equalizer', opts, 'Select', (selected) => {
-                  loadEq(selected.text)
-                }, 'Cancel', null, undefined, idx);
-              });
-            } else if (selected.text === 'Equalizer Panel') {
-              this.$router.push('equalizer_panel');
-            } else if (selected.text === 'Clear Caches') {
-              localforage.setItem(DB_CACHED_URLS, null)
-              .then(() => {
-                this.$router.showToast('DONE');
-              });
-            } else if (selected.text === 'Exit') {
-              window.close();
-            } else {
-              // console.log(selected.text);
-            }
-          }, () => {
-            setTimeout(() => {}, 100);
-          }, 0);
-        });
+        }, () => {
+          setTimeout(() => {}, 100);
+        }, 0);
       }
     },
     dPadNavListener: {
@@ -2237,7 +1923,7 @@ window.addEventListener("load", function() {
         const move = this.$state.getState('TRACKLIST_IDX') + 1;
         if (TRACKLIST[move]) {
           this.$state.setState('TRACKLIST_IDX', move);
-          playVideoByID(move);
+          playMainAudio(move);
         }
       },
       arrowDown: function() {
@@ -2247,7 +1933,7 @@ window.addEventListener("load", function() {
         const move = this.$state.getState('TRACKLIST_IDX') - 1;
         if (TRACKLIST[move]) {
           this.$state.setState('TRACKLIST_IDX', move);
-          playVideoByID(move);
+          playMainAudio(move);
         }
       },
     },
@@ -2274,11 +1960,7 @@ window.addEventListener("load", function() {
       'playlist': {
         name: 'playlist',
         component: playlist
-      },
-      'equalizer_panel': {
-        name: 'equalizer_panel',
-        component: equalizer_panel
-      },
+      }
     }
   });
 

@@ -2,7 +2,7 @@
 
 ## The title explain everything
 
-##### master:
+##### master(UNSTABLE):
 - NOTED, master branch not compatible with legacy
 - Stream audio from local file, fallback to network stream(WIP)
 - support youtube playlist(WIP)
