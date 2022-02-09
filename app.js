@@ -875,148 +875,116 @@ window.addEventListener("load", function() {
     const MINI_PLAYER = document.createElement("audio");
     MINI_PLAYER.volume = 1;
     MINI_PLAYER.mozAudioChannelType = 'content';
-    MINI_PLAYER.src = url;
 
-    MINI_PLAYER.onerror = (evt) => {
-      console.log('MINI_PLAYER', evt);
-    };
-
-    const miniPlayerDialog = Kai.createDialog('Mini Player', `
-      <div>
-        <div>
-          <input id="duration_slider" style="width:100%" value="0" type="range" min="0" max="100" disabled/>
-        </div>
-        <div class="kui-row-center">
-          <div id="current_time">00:00</div>
-          <div id="duration">00:00</div>
-        </div>
-        <div>
-          <input id="__focus__" class="kui-input" value="TODO" type="text" style="color: transparent; text-shadow: 0px 0px 0px rgb(33, 150, 243); height: 0px; position: absolute; left: 0px;z-index:-9;"/>
-        </div>
-      </div>`,
-    null, '', undefined, '', undefined, '', undefined, undefined, $router);
-    miniPlayerDialog.mounted = () => {
-      setTimeout(() => {
-        $router.setSoftKeyText('Exit' , '', '');
-        if (!navigator.mozAudioChannelManager) {
-          $router.setSoftKeyRightText((MINI_PLAYER.volume * 100).toFixed(0) + '%');
-        }
-        const DURATION_SLIDER = document.getElementById('duration_slider');
-        const CURRENT_TIME = document.getElementById('current_time');
-        const DURATION = document.getElementById('duration');
-        const FOCUS = document.getElementById('__focus__');
-        if (!FOCUS) {
-          return;
-        }
-        FOCUS.focus();
-        FOCUS.addEventListener('keydown', (evt) => {
-          switch (evt.key) {
-            case 'Backspace':
-            case 'EndCall':
+    var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION;
+    $router.showBottomSheet(
+      new Kai({
+        name: 'miniPlayer',
+        data: {
+          title: 'miniPlayer',
+        },
+        templateUrl: document.location.origin + '/templates/miniPlayer.html',
+        softKeyText: { left: 'Exit', center: '', right: '' },
+        softKeyListener: {
+          left: function() {
+            $router.hideBottomSheet();
+          },
+          center: function() {
+            if (MINI_PLAYER.duration > 0 && !MINI_PLAYER.paused) {
               MINI_PLAYER.pause();
-              $router.hideBottomSheet();
-              setTimeout(() => {
-                cb();
-                FOCUS.blur();
-              }, 100);
-              break
-            case 'SoftRight':
-              break
-            case 'SoftLeft':
-              MINI_PLAYER.pause();
-              $router.hideBottomSheet();
-              setTimeout(() => {
-                cb();
-                FOCUS.blur();
-              }, 100);
-              break
-            case 'Enter':
-              if (MINI_PLAYER.duration > 0 && !MINI_PLAYER.paused) {
-                MINI_PLAYER.pause();
-              } else {
-                MINI_PLAYER.play();
-              }
-              break
-            case 'ArrowLeft':
-              var threshold = new Date().getTime() - LFT_DBL_CLICK_TH;
-              if (threshold > 0 && threshold <= 300) {
-                clearTimeout(LFT_DBL_CLICK_TIMER);
-                LFT_DBL_CLICK_TH = 0;
-                MINI_PLAYER.pause();
-                MINI_PLAYER.currentTime -= 10;
-                MINI_PLAYER.play();
-              } else {
-                LFT_DBL_CLICK_TH = new Date().getTime();
-                LFT_DBL_CLICK_TIMER = setTimeout(() => {
-                  if (LFT_DBL_CLICK_TH !== 0) {
-                    LFT_DBL_CLICK_TH = 0;
-                  }
-                }, 500);
-              }
-              break
-            case 'ArrowRight':
-              var threshold = new Date().getTime() - RGT_DBL_CLICK_TH;
-              if (threshold > 0 && threshold <= 300) {
-                clearTimeout(RGT_DBL_CLICK_TIMER);
-                RGT_DBL_CLICK_TH = 0;
-                MINI_PLAYER.pause();
-                MINI_PLAYER.currentTime += 10;
-                MINI_PLAYER.play();
-              } else {
-                RGT_DBL_CLICK_TH = new Date().getTime();
-                RGT_DBL_CLICK_TIMER = setTimeout(() => {
-                  if (RGT_DBL_CLICK_TH !== 0) {
-                    RGT_DBL_CLICK_TH = 0;
-                  }
-                }, 500);
-              }
-              break
+            } else {
+              MINI_PLAYER.play();
+            }
+          },
+          right: function() {}
+        },
+        mounted: function() {
+          DURATION_SLIDER = document.getElementById('duration_slider');
+          CURRENT_TIME = document.getElementById('current_time');
+          DURATION = document.getElementById('duration');
+          PLAY_BTN = document.getElementById('play_btn');
+          MINI_PLAYER.addEventListener('loadedmetadata', this.methods.onloadedmetadata);
+          MINI_PLAYER.addEventListener('timeupdate', this.methods.ontimeupdate);
+          MINI_PLAYER.addEventListener('pause', this.methods.onpause);
+          MINI_PLAYER.addEventListener('play', this.methods.onplay);
+          MINI_PLAYER.addEventListener('seeking', this.methods.onseeking);
+          MINI_PLAYER.addEventListener('seeked', this.methods.onseeked);
+          MINI_PLAYER.addEventListener('ended', this.methods.onended);
+          MINI_PLAYER.addEventListener('error', this.methods.onerror);
+          console.log('miniPlayer:', url);
+          if (!navigator.mozAudioChannelManager) {
+            $router.setSoftKeyRightText((MINI_PLAYER.volume * 100).toFixed(0) + '%');
           }
-        });
-
-        MINI_PLAYER.onloadedmetadata = (evt) => {
-          duration = evt.target.duration;
-          DURATION.innerHTML = convertTime(evt.target.duration);
-          DURATION_SLIDER.setAttribute("max", duration);
+          MAIN_PLAYER.pause();
+          MINI_PLAYER.src = url;
+          MINI_PLAYER.play();
+        },
+        unmounted: function() {
+          $router.hideLoading();
+          MINI_PLAYER.pause();
+          MINI_PLAYER.removeEventListener('loadedmetadata', this.methods.onloadedmetadata);
+          MINI_PLAYER.removeEventListener('timeupdate', this.methods.ontimeupdate);
+          MINI_PLAYER.removeEventListener('pause', this.methods.onpause);
+          MINI_PLAYER.removeEventListener('play', this.methods.onplay);
+          MINI_PLAYER.removeEventListener('seeking', this.methods.onseeking);
+          MINI_PLAYER.removeEventListener('seeked', this.methods.onseeked);
+          MINI_PLAYER.removeEventListener('ended', this.methods.onended);
+          MINI_PLAYER.removeEventListener('error', this.methods.onerror);
+        },
+        methods: {
+          onloadedmetadata: function(evt) {
+            MINI_PLAYER.fastSeek(0);
+            var duration = evt.target.duration;
+            DURATION.innerHTML = convertTime(evt.target.duration);
+            DURATION_SLIDER.setAttribute("max", duration);
+          },
+          ontimeupdate: function(evt) {
+            var currentTime = evt.target.currentTime;
+            CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
+            DURATION_SLIDER.value = currentTime;
+          },
+          onpause: function() {
+            PLAY_BTN.src = '/icons/img/play.png';
+          },
+          onplay: function() {
+            PLAY_BTN.src = '/icons/img/pause.png';
+          },
+          onseeking: function(evt) {
+            $router.showLoading(false);
+            CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
+            DURATION_SLIDER.value = evt.target.currentTime;
+          },
+          onseeked: function(evt) {
+            $router.hideLoading();
+          },
+          onended: function() {
+            PLAY_BTN.src = '/icons/img/play.png';
+          },
+          onerror: function () {
+            MINI_PLAYER.pause();
+            PLAY_BTN.src = '/icons/img/play.png';
+            $router.showToast('Error');
+          },
+        },
+        dPadNavListener: {
+          arrowUp: function() {
+            volumeUp(MINI_PLAYER, $router, toggleVolume)
+          },
+          arrowRight: function() {
+            MINI_PLAYER.fastSeek(MINI_PLAYER.currentTime + 10);
+          },
+          arrowDown: function() {
+            volumeDown(MINI_PLAYER, $router, toggleVolume);
+          },
+          arrowLeft: function() {
+            MINI_PLAYER.fastSeek(MINI_PLAYER.currentTime - 10);
+          },
+        },
+        backKeyListener: function(evt) {
+          return -1;
         }
-
-        MINI_PLAYER.ontimeupdate = (evt) => {
-          var currentTime = evt.target.currentTime;
-          CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-          DURATION_SLIDER.value = currentTime;
-        }
-
-        MINI_PLAYER.onpause = () => {
-          $router.setSoftKeyCenterText('PLAY');
-          // console.log('PLAY');
-        }
-
-        MINI_PLAYER.onplay = () => {
-          $router.setSoftKeyCenterText('PAUSE');
-          // console.log('PAUSE');
-        }
-
-        MAIN_PLAYER.pause();
-        MINI_PLAYER.play();
-
-      }, 101);
-    }
-    miniPlayerDialog.dPadNavListener = {
-      arrowUp: function() {
-        volumeUp(MINI_PLAYER, $router, toggleVolume)
-        const FOCUS = document.getElementById('__focus__');
-        FOCUS.focus();
-      },
-      arrowDown: function() {
-        volumeDown(MINI_PLAYER, $router, toggleVolume);
-        const FOCUS = document.getElementById('__focus__');
-        FOCUS.focus();
-      }
-    }
-    miniPlayerDialog.backKeyListener = function() {
-      return false;
-    }
-    $router.showBottomSheet(miniPlayerDialog);
+      })
+    );
   }
 
   const addOrEditPlaylistDialog = function(_this, name = '', id = null) {
@@ -2048,7 +2016,7 @@ window.addEventListener("load", function() {
 
       this.methods.togglePlayIcon();
 
-      document.activeElement.addEventListener('keydown', this.methods.skipEvent);
+      document.addEventListener('keydown', this.methods.skipEvent);
 
       localforage.getItem('REPEAT')
       .then((val) => {
@@ -2070,7 +2038,7 @@ window.addEventListener("load", function() {
     unmounted: function() {
       this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
       this.$state.removeStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
-      document.activeElement.removeEventListener('keydown', this.methods.skipEvent);
+      document.removeEventListener('keydown', this.methods.skipEvent);
       MAIN_PLAYER.ontimeupdate = null;
       MAIN_PLAYER.onpause = null;
       MAIN_PLAYER.onplay = null;

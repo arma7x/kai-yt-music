@@ -35,6 +35,12 @@
       -webkit-filter: opacity(.4);
       filter: opacity(.4);
     }
+    input[type="range"]::-moz-range-progress {
+      background-color: #c0c0c0;
+    }
+    input[type="range"]::-moz-range-track {
+      background-color: #c0c0c0;
+    }
   </style>
   <div class="kai-container" style="margin:5px;">
     <div>
@@ -74,7 +80,7 @@
     </div>
 
     <div style="margin-top:5px">
-      <input id="home_duration_slider" style="width:100%" value="{{ slider_value }}" type="range" min="0" max="{{ slider_max }}" disabled/>
+      <input id="home_duration_slider" style="width:99%;background-color:#ffffff00;border-color:#c0c0c0;" value="{{ slider_value }}" type="range" min="0" max="{{ slider_max }}" disabled/>
     </div>
     <div class="kui-row-center" style="margin-top:5px">
       <div id="home_current_time">{{ current_time }}</div>

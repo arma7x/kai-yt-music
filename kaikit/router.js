@@ -263,7 +263,7 @@ const KaiRouter = (function() {
   }
 
   KaiRouter.prototype.showDialog = function(title, body, dataCb, positiveText, positiveCb, negativeText, negativeCb, neutralText, neutralCb, closeCb) {
-    if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+    if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
       document.activeElement.blur();
     }
     const dialog = Kai.createDialog(title, body, dataCb, positiveText, positiveCb, negativeText, negativeCb, neutralText, neutralCb, closeCb, this);
@@ -275,7 +275,7 @@ const KaiRouter = (function() {
   }
 
   KaiRouter.prototype.showOptionMenu = function(title, options, selectText, selectCb, closeCb, verticalNavIndex = -1) {
-    if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+    if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
       document.activeElement.blur();
     }
     const option_menu = Kai.createOptionMenu(title, options, selectText, selectCb, closeCb, verticalNavIndex, this);
@@ -287,7 +287,7 @@ const KaiRouter = (function() {
   }
 
   KaiRouter.prototype.showSingleSelector = function(title, options, selectText, selectCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1) {
-    if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+    if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
       document.activeElement.blur();
     }
     const single_selector = Kai.createSingleSelector(title, options, selectText, selectCb, cancelText, cancelCb, closeCb, verticalNavIndex, this);
@@ -299,7 +299,7 @@ const KaiRouter = (function() {
   }
 
   KaiRouter.prototype.showMultiSelector = function(title, options, selectText, selectCb, saveText, saveCb, cancelText, cancelCb, closeCb, verticalNavIndex = -1) {
-    if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+    if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
       document.activeElement.blur();
     }
     const multi_selector = Kai.createMultiSelector(title, options, selectText, selectCb, saveText, saveCb, cancelText, cancelCb, closeCb, verticalNavIndex, this);
@@ -311,7 +311,7 @@ const KaiRouter = (function() {
   }
 
   KaiRouter.prototype.showDatePicker = function(year, month, day = 1, selectCb, closeCb) {
-    if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+    if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
       document.activeElement.blur();
     }
     const date_picker = Kai.createDatePicker(year, month, day, selectCb, closeCb, this);
@@ -323,7 +323,7 @@ const KaiRouter = (function() {
   }
 
   KaiRouter.prototype.showTimePicker = function(hour, minute, is12H = true, selectCb, closeCb) {
-    if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+    if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
       document.activeElement.blur();
     }
     const time_picker = Kai.createTimePicker(hour, minute, is12H, selectCb, closeCb, this);
@@ -427,7 +427,7 @@ const KaiRouter = (function() {
 
   KaiRouter.prototype.clickLeft = function() {
     if (this.stack[this.stack.length - 1]) {
-      if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
         if (typeof this.stack[this.stack.length - 1].softKeyInputFocusListener.left === 'function') {
           this.stack[this.stack.length - 1].softKeyInputFocusListener.left();
         }
@@ -441,7 +441,7 @@ const KaiRouter = (function() {
 
   KaiRouter.prototype.clickCenter = function() {
     if (this.stack[this.stack.length - 1]) {
-      if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
         if (typeof this.stack[this.stack.length - 1].softKeyInputFocusListener.center === 'function') {
           this.stack[this.stack.length - 1].softKeyInputFocusListener.center();
         }
@@ -455,7 +455,7 @@ const KaiRouter = (function() {
 
   KaiRouter.prototype.clickRight = function() {
     if (this.stack[this.stack.length - 1]) {
-      if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
         if (typeof this.stack[this.stack.length - 1].softKeyInputFocusListener.right === 'function') {
           this.stack[this.stack.length - 1].softKeyInputFocusListener.right();
         }
@@ -499,10 +499,10 @@ const KaiRouter = (function() {
     }
   }
 
-  KaiRouter.prototype.backKey = function() {
+  KaiRouter.prototype.backKey = function(evt) {
     if (this.stack[this.stack.length - 1]) {
       if (typeof this.stack[this.stack.length - 1].backKeyListener === 'function') {
-        return this.stack[this.stack.length - 1].backKeyListener();
+        return this.stack[this.stack.length - 1].backKeyListener(evt);
       }
     }
   }
@@ -518,7 +518,7 @@ const KaiRouter = (function() {
     switch(e.key) {
       case 'Backspace':
       case 'EndCall':
-        if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
           if (document.activeElement.value.length === 0) {
             document.activeElement.blur();
           }
@@ -527,7 +527,10 @@ const KaiRouter = (function() {
           return;
         }
         if (_router) {
-          const isStop = _router.backKey();
+          const isStop = _router.backKey(e);
+          if (isStop === -1) {
+            return;
+          }
           if (isStop === true) {
             e.preventDefault();
             e.stopPropagation();
@@ -561,7 +564,7 @@ const KaiRouter = (function() {
         }
         break
       case 'ArrowUp':
-        if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
           document.activeElement.blur();
         }
         if (_router) {
@@ -569,7 +572,7 @@ const KaiRouter = (function() {
         }
         break
       case 'ArrowRight':
-        if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
           return;
         }
         if (_router) {
@@ -577,7 +580,7 @@ const KaiRouter = (function() {
         }
         break
       case 'ArrowDown':
-        if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
           document.activeElement.blur();
         }
         if (_router) {
@@ -585,7 +588,7 @@ const KaiRouter = (function() {
         }
         break
       case 'ArrowLeft':
-        if ((document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        if (['INPUT', 'TEXTAREA'].indexOf(document.activeElement.tagName) > -1) {
           return;
         }
         if (_router) {
