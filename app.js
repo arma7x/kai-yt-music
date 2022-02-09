@@ -448,37 +448,13 @@ window.addEventListener("load", () => {
     localforage.removeItem(OLD_PLAYING);
     state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
-
-    const launch = () => {
-      var tracks = state.getState('DATABASE');
-      for (var y in tracks) {
-        TRACKLIST.push(tracks[y]);
-        TRACKLIST_ORDER.push(tracks[y]);
-      }
-      shuffling();
-      playMainAudio(state.getState('TRACKLIST_IDX'));
+    var tracks = state.getState('DATABASE');
+    for (var y in tracks) {
+      TRACKLIST.push(tracks[y]);
+      TRACKLIST_ORDER.push(tracks[y]);
     }
-
-    T_AUDIO.keys()
-    .then((keys) => {
-      var done = keys.length;
-      keys.forEach((key) => {
-        T_AUDIO.getItem(key)
-        .then((value) => {
-          const list = state.getState('DATABASE');
-          list[key] = value;
-          state.setState('DATABASE', list);
-          done--;
-          if (done <= 0)
-            launch();
-        })
-        .catch((err) => {
-          done--;
-          if (done <= 0)
-            launch();
-        });
-      });
-    });
+    shuffling();
+    playMainAudio(state.getState('TRACKLIST_IDX'));
   }
 
   function playPlaylistById(id) {
