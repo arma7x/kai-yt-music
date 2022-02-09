@@ -248,7 +248,7 @@ window.addEventListener("load", () => {
 
   var TRACK_NAME = '';
   var TRACKLIST = [];
-  var _TRACKLIST = [];
+  var TRACKLIST_ORDER = [];
 
   const state = new KaiState({
     CONFIGURATION: {},
@@ -334,7 +334,7 @@ window.addEventListener("load", () => {
       state.setState('TRACKLIST_IDX', 0);
     } else {
       const v_id = TRACKLIST[state.getState('TRACKLIST_IDX')].id;
-      TRACKLIST = JSON.parse(JSON.stringify(_TRACKLIST));
+      TRACKLIST = JSON.parse(JSON.stringify(TRACKLIST_ORDER));
       const idx = TRACKLIST.findIndex((t) => {
         return t.id === v_id;
       });
@@ -368,14 +368,33 @@ window.addEventListener("load", () => {
     return REPEAT_BTN;
   }
 
+  function init(from = null) {
+    console.log('INIT APP:', from);
+    localforage.getItem('SHUFFLE')
+    .then((SHUFFLE) => {
+      if (SHUFFLE == null)
+        SHUFFLE = false;
+      state.setState('SHUFFLE', SHUFFLE);
+      localforage.setItem('SHUFFLE', SHUFFLE);
+      localforage.getItem(OLD_PLAYING)
+      .then((playlist_id) => {
+        if (playlist_id == null) {
+          playDefaultPlaylist();
+        } else {
+          playPlaylistById(playlist_id);
+        }
+      });
+    });
+  }
+
   T_CONFIGURATION.keys()
   .then((keys) => {
     keys.forEach((key) => {
       T_CONFIGURATION.getItem(key)
       .then((value) => {
-        const conf = state.getState('CONFIGURATION');
-        conf[key] = value;
-        state.setState('CONFIGURATION', conf);
+        const list = state.getState('CONFIGURATION');
+        list[key] = value;
+        state.setState('CONFIGURATION', list);
         console.log(state.getState('CONFIGURATION'));
       });
     });
@@ -383,12 +402,36 @@ window.addEventListener("load", () => {
     console.log(err);
   });
 
-  T_AUDIO.getItem(DB_AUDIO_CURSOR)
-  .then((DATABASE) => {
-    if (DATABASE == null) {
-      DATABASE = {};
-    }
-    state.setState('DATABASE', DATABASE);
+//console.log(state.getState('DATABASE'));
+  T_AUDIO.keys()
+  .then((keys) => {
+    var success = 0;
+    var fail = 0;
+    var done = keys.length;
+    if (done === 0)
+      init('Empty');
+    keys.forEach((key) => {
+      T_AUDIO.getItem(key)
+      .then((value) => {
+        const list = state.getState('DATABASE');
+        list[key] = value;
+        state.setState('DATABASE', list);
+        success++;
+        done--;
+        if (done <= 0)
+          init(`${success}, ${fail}`);
+      })
+      .catch((err) => {
+        fail++;
+        done--;
+        if (done <= 0)
+          init(`${success}, ${fail}`);
+      });
+    });
+  })
+  .catch((err) => {
+    console.log(err);
+    init(err.toString());
   });
 
   localforage.getItem(OLD_PLAYLIST)
@@ -399,40 +442,46 @@ window.addEventListener("load", () => {
     state.setState('PLAYLIST', PLAYLIST);
   });
 
-  localforage.getItem('SHUFFLE')
-  .then((SHUFFLE) => {
-    if (SHUFFLE == null)
-      SHUFFLE = false;
-    state.setState('SHUFFLE', SHUFFLE);
-    localforage.setItem('SHUFFLE', SHUFFLE);
-    localforage.getItem(OLD_PLAYING)
-    .then((playlist_id) => {
-      if (playlist_id == null) {
-        playDefaultCollection();
-      } else {
-        playPlaylistCollection(playlist_id);
-      }
-    });
-  });
-
-  function playDefaultCollection() {
+  function playDefaultPlaylist() {
     TRACKLIST = [];
-    _TRACKLIST = [];
+    TRACKLIST_ORDER = [];
     localforage.removeItem(OLD_PLAYING);
     state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
-    T_AUDIO.getItem(DB_AUDIO_CURSOR)
-    .then((tracks) => {
+
+    const launch = () => {
+      var tracks = state.getState('DATABASE');
       for (var y in tracks) {
         TRACKLIST.push(tracks[y]);
-        _TRACKLIST.push(tracks[y]);
+        TRACKLIST_ORDER.push(tracks[y]);
       }
       shuffling();
       playMainAudio(state.getState('TRACKLIST_IDX'));
+    }
+
+    T_AUDIO.keys()
+    .then((keys) => {
+      var done = keys.length;
+      keys.forEach((key) => {
+        T_AUDIO.getItem(key)
+        .then((value) => {
+          const list = state.getState('DATABASE');
+          list[key] = value;
+          state.setState('DATABASE', list);
+          done--;
+          if (done <= 0)
+            launch();
+        })
+        .catch((err) => {
+          done--;
+          if (done <= 0)
+            launch();
+        });
+      });
     });
   }
 
-  function playPlaylistCollection(id) {
+  function playPlaylistById(id) {
     localforage.getItem(OLD_PLAYLIST)
     .then((PLAYLIST) => {
       if (PLAYLIST == null) {
@@ -444,7 +493,7 @@ window.addEventListener("load", () => {
         }
         return Promise.resolve(PLAYLIST[id]);
       }
-      playDefaultCollection();
+      playDefaultPlaylist();
       return Promise.reject('Playlist not exist');
     })
     .then((PLYLST) => {
@@ -462,7 +511,7 @@ window.addEventListener("load", () => {
           state.setState('TRACKLIST_IDX', 0);
           TRACK_NAME = PLYLST.name;
           TRACKLIST = collections;
-          _TRACKLIST = JSON.parse(JSON.stringify(collections));
+          TRACKLIST_ORDER = JSON.parse(JSON.stringify(collections));
           shuffling();
           playMainAudio(state.getState('TRACKLIST_IDX'));
           router.showToast(`PLAYING ${TRACK_NAME}`);
@@ -510,6 +559,7 @@ window.addEventListener("load", () => {
         .catch((_err) => {
           return decryptSignatureV2(obj.signatureCipher, obj.player)
           .then((url) => {
+            putCachedURL(obj, url);
             return Promise.resolve(url);
           })
           .catch((err) => {
@@ -836,7 +886,7 @@ window.addEventListener("load", () => {
         this.setData({ playlists: playlists });
         this.methods.renderSoftKeyLCR();
       },
-      playlistEditor: function(name = '', id = null) {
+      playlistEditor: function(name = '', id = null) { // TODO
         var oldName = '';
         name = name.trim();
         if (name.length === 0) {
@@ -884,7 +934,7 @@ window.addEventListener("load", () => {
       center: function() {
         const _selected = this.data.playlists[this.verticalNavIndex];
         if (_selected) {
-          playPlaylistCollection(_selected.id);
+          playPlaylistById(_selected.id);
         }
       },
       right: function() {
@@ -993,13 +1043,10 @@ window.addEventListener("load", () => {
   });
 
   const audioMetadataEditor = function ($router, audio, isUpdate = false) {
-    T_AUDIO.getItem(DB_AUDIO_CURSOR)
-    .then((DATABASE) => {
-      if (DATABASE == null) {
-        DATABASE = {};
-      }
-      if (DATABASE[audio.id] && !isUpdate) {
-        $router.showToast('Already exist inside DB');
+    T_AUDIO.getItem(audio.id)
+    .then((METADATA) => {
+      if (METADATA != null && !isUpdate) {
+       $router.showToast('Already exist inside DB');
       } else {
         $router.push(
           new Kai({
@@ -1055,15 +1102,14 @@ window.addEventListener("load", () => {
                   } catch(e){}
                 }
 
-                DATABASE[audio.id] = metadata;
-                T_AUDIO.setItem(DB_AUDIO_CURSOR, DATABASE)
-                .then(() => {
+                T_AUDIO.setItem(audio.id, metadata)
+                .then((saved) => {
                   $router.showToast('Saved');
+                  const list = state.getState('DATABASE');
+                  list[audio.id] = metadata;
+                  state.setState('DATABASE', list);
+                  console.log(state.getState('DATABASE'));
                   $router.pop();
-                  return T_AUDIO.getItem(DB_AUDIO_CURSOR);
-                })
-                .then((UPDATED_DATABASE) => {
-                  state.setState('DATABASE', UPDATED_DATABASE);
                 })
                 .catch((err) => {
                   console.log(err);
@@ -1166,7 +1212,7 @@ window.addEventListener("load", () => {
       },
       search: function(q = '') {
         this.$router.showLoading();
-        searchAudio(q)
+        searchVideo(q)
         .then((data) => {
           this.verticalNavIndex = -1;
           var videos = [];
@@ -1193,7 +1239,7 @@ window.addEventListener("load", () => {
       },
       nextPage: function() {
         this.$router.showLoading();
-        searchAudio("", this.data.key, this.data.nextPageToken)
+        searchVideo("", this.data.key, this.data.nextPageToken)
         .then((data) => {
           var videos = [];
           data.results.forEach((t) => {
@@ -1476,14 +1522,11 @@ window.addEventListener("load", () => {
                 console.log(err);
               });
             }
-            delete DB[video.id];
-            T_AUDIO.setItem(DB_AUDIO_CURSOR, DB)
+            T_AUDIO.removeItem(video.id)
             .then(() => {
-              return T_AUDIO.getItem(DB_AUDIO_CURSOR);
-            })
-            .then((UPDATED_DATABASE) => {
+              delete DB[video.id];
               this.$router.showToast('Deleted');
-              this.$state.setState('DATABASE', UPDATED_DATABASE);
+              this.$state.setState('DATABASE', DB);
               this.methods.resetSearch();
             })
             .catch((err) => {
@@ -1663,7 +1706,7 @@ window.addEventListener("load", () => {
               } else if (selected.text === 'Delete') {
                 this.methods.deleteAudio(_selected);
               } else if (selected.text === 'Play All') {
-                playDefaultCollection();
+                playDefaultPlaylist();
               }
             }, () => {
               setTimeout(() => {
