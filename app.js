@@ -2,33 +2,28 @@ localforage.setDriver(localforage.INDEXEDDB);
 const MIME = {"audio/aac":"aac","audio/x-aac":"aac","audio/adpcm":"adp","application/vnd.audiograph":"aep","audio/x-aiff":"aif","audio/amr":"amr","audio/basic":"au","audio/x-caf":"caf","audio/vnd.dra":"dra","audio/vnd.dts":"dts","audio/vnd.dts.hd":"dtshd","audio/vnd.nuera.ecelp4800":"ecelp4800","audio/vnd.nuera.ecelp7470":"ecelp7470","audio/vnd.nuera.ecelp9600":"ecelp9600","audio/vnd.digital-winds":"eol","audio/x-flac":"flac","audio/vnd.lucent.voice":"lvp","audio/x-mpegurl":"m3u","audio/x-m4a":"m4a","audio/midi":"mid","audio/x-matroska":"mka","audio/mpeg":"mp3","audio/mp4":"mp4a","audio/mobile-xmf":"mxmf","audio/ogg":"opus","audio/vnd.ms-playready.media.pya":"pya","audio/x-realaudio":"ra","audio/x-pn-realaudio":"ram","audio/vnd.rip":"rip","audio/x-pn-realaudio-plugin":"rmp","audio/s3m":"s3m","application/vnd.yamaha.smaf-audio":"saf","audio/silk":"sil","audio/vnd.dece.audio":"uva","audio/x-wav":"wav","audio/x-ms-wax":"wax","audio/webm":"weba","audio/x-ms-wma":"wma","audio/xm":"xm"};
 
 const CACHED_DECRYPTOR = {};
-
 const DEFAULT_VOLUME = 0.02;
-const SDCARD = navigator.getDeviceStorage('sdcard');
 
 const DB_NAME = 'YT_MUSIC';
-
 const DB_AUDIO = 'YT_AUDIO'; // { id: { ...metadata } }
-const T_AUDIO = localforage.createInstance({
+const DB_PLAYLIST = 'YT_PLAYLIST'; // { id: {name, sync, collections: []} }
+const DB_CACHED_URL = 'YT_CACHED_URL'; // { id: URL }
+const DB_PLAYING = 'YT_PLAYING'; // localStorage string
+const DB_CONFIGURATION = 'YT_CONFIGURATION';const T_AUDIO = localforage.createInstance({
   name: DB_NAME,
   storeName: DB_AUDIO
 });
 
-const DB_PLAYLIST = 'YT_PLAYLIST'; // { id: {name, sync, collections: []} }
 const T_PLAYLIST = localforage.createInstance({
   name: DB_NAME,
   storeName: DB_PLAYLIST
 });
 
-const DB_CACHED_URL = 'YT_CACHED_URL'; // { id: URL }
 const T_CACHED_URL = localforage.createInstance({
   name: DB_NAME,
   storeName: DB_CACHED_URL
 });
 
-const DB_PLAYING = 'YT_PLAYING'; // localStorage string
-
-const DB_CONFIGURATION = 'YT_CONFIGURATION';
 const T_CONFIGURATION = localforage.createInstance({
   name: DB_NAME,
   storeName: DB_CONFIGURATION
@@ -37,6 +32,10 @@ const T_CONFIGURATION = localforage.createInstance({
 var MAIN_DURATION_SLIDER;
 var MAIN_CURRENT_TIME;
 var MAIN_DURATION;
+var MAIN_THUMB;
+var MAIN_TITLE;
+var MAIN_PLAY_BTN;
+var MAIN_THUMB_BUFF;
 
 var LFT_DBL_CLICK_TH = 0;
 var LFT_DBL_CLICK_TIMER = undefined;
@@ -99,12 +98,12 @@ function readableFileSize(bytes, si = false, dp = 1) {
   return bytes.toFixed(dp) + '' + units[u];
 }
 
-function toggleVolume(MINI_PLAYER, $router) {
+function toggleVolume(PLYR, $router) {
   if (navigator.mozAudioChannelManager) {
     navigator.volumeManager.requestShow();
     $router.setSoftKeyRightText('');
   } else {
-    $router.setSoftKeyRightText((MINI_PLAYER.volume * 100).toFixed(0) + '%');
+    $router.setSoftKeyRightText((PLYR.volume * 100).toFixed(0) + '%');
   }
 }
 
@@ -256,18 +255,13 @@ window.addEventListener("load", () => {
     DATABASE: {},
     PLAYLIST: {},
     TRACKLIST_IDX: 0,
-    TRACK_DURATION: 0,
     REPEAT: -1,
     SHUFFLE: false,
   });
 
-  var MAIN_PLAYER = document.createElement("audio");
+  const MAIN_PLAYER = document.createElement("audio");
   MAIN_PLAYER.volume = 1;
   MAIN_PLAYER.mozAudioChannelType = 'content';
-
-  MAIN_PLAYER.onerror = (evt) => {
-    console.log('MAIN_PLAYER', evt);
-  };
 
   MAIN_PLAYER.onended = (e) => {
     const REPEAT = state.getState('REPEAT');
@@ -289,10 +283,6 @@ window.addEventListener("load", () => {
         playMainAudio(next);
       }
     }
-  }
-
-  MAIN_PLAYER.onloadedmetadata = (evt) => {
-    state.setState('TRACK_DURATION', evt.target.duration);
   }
 
   function toggleShuffle($router) {
@@ -549,7 +539,7 @@ window.addEventListener("load", () => {
       $router.showLoading();
       getAudioStreamURL(audio.id)
       .then((url) => {
-        console.log(url);
+        // console.log(url);
         var BAR, CUR, MAX;
         var start = 0;
         var loaded = 0;
@@ -664,7 +654,7 @@ window.addEventListener("load", () => {
   function playMainAudioFallback(audio) {
     getCachedURL(audio.id)
     .then((url) => {
-      console.log(url);
+      // console.log(url);
       MAIN_PLAYER.mozAudioChannelType = 'content';
       MAIN_PLAYER.src = url;
       MAIN_PLAYER.play();
@@ -673,7 +663,7 @@ window.addEventListener("load", () => {
       console.log(err);
       getAudioStreamURL(audio.id)
       .then((url) => {
-        console.log(url);
+        // console.log(url);
         MAIN_PLAYER.mozAudioChannelType = 'content';
         MAIN_PLAYER.src = url;
         MAIN_PLAYER.play();
@@ -689,7 +679,7 @@ window.addEventListener("load", () => {
       return;
     }
     if (TRACKLIST[idx].local_stream) {
-      console.log(TRACKLIST[idx].local_stream);
+      // console.log(TRACKLIST[idx].local_stream);
       DS.__getFile__(TRACKLIST[idx].local_stream)
       .then((file) => {
         MAIN_PLAYER.mozAudioChannelType = 'content';
@@ -773,7 +763,7 @@ window.addEventListener("load", () => {
           MINI_PLAYER.addEventListener('seeked', this.methods.onseeked);
           MINI_PLAYER.addEventListener('ended', this.methods.onended);
           MINI_PLAYER.addEventListener('error', this.methods.onerror);
-          console.log('miniPlayer:', url);
+          // console.log('miniPlayer:', url);
           if (!navigator.mozAudioChannelManager) {
             $router.setSoftKeyRightText((MINI_PLAYER.volume * 100).toFixed(0) + '%');
           }
@@ -1848,17 +1838,6 @@ window.addEventListener("load", () => {
   const home = new Kai({
     name: 'home',
     data: {
-      title: 'UNKNOWN',
-      artist: 'UNKNOWN',
-      album: 'UNKNOWN',
-      genre: 'UNKNOWN',
-      album_art: '/icons/img/baseline_person_white_36dp.png',
-      play_icon: '/icons/img/baseline_play_circle_filled_white_36dp.png',
-      tx_tl: '0/0',
-      duration: '00:00',
-      current_time: '00:00',
-      slider_value: 0,
-      slider_max: 0,
       repeat_class: 'inactive',
       repeat_icon: '/icons/img/baseline_repeat_white_18dp.png',
       shuffle_class: 'inactive',
@@ -1866,15 +1845,28 @@ window.addEventListener("load", () => {
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
       this.$router.setHeaderTitle('YT Music');
-      MAIN_PLAYER.ontimeupdate = this.methods.ontimeupdate;
-      MAIN_PLAYER.onpause = this.methods.onpause;
-      MAIN_PLAYER.onplay = this.methods.onplay;
 
-      this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
-      this.methods.listenTracklistIdx(this.$state.getState('TRACKLIST_IDX'));
+      MAIN_DURATION_SLIDER = document.getElementById('main_duration_slider');
+      MAIN_CURRENT_TIME = document.getElementById('main_current_time');
+      MAIN_DURATION = document.getElementById('main_duration');
+      MAIN_THUMB = document.getElementById('main_thumb');
+      MAIN_TITLE = document.getElementById('main_title');
+      MAIN_PLAY_BTN = document.getElementById('main_play_btn');
+      MAIN_THUMB_BUFF = document.getElementById('thumb_buffering');
+      MAIN_CURRENT_TIME.innerHTML = convertTime(MAIN_PLAYER.currentTime);
 
-      this.$state.addStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
-      this.methods.listenTrackDuration(this.$state.getState('TRACK_DURATION'));
+      MAIN_PLAYER.addEventListener('loadedmetadata', this.methods.onloadedmetadata);
+      MAIN_PLAYER.addEventListener('timeupdate', this.methods.ontimeupdate);
+      MAIN_PLAYER.addEventListener('pause', this.methods.onpause);
+      MAIN_PLAYER.addEventListener('play', this.methods.onplay);
+      MAIN_PLAYER.addEventListener('seeking', this.methods.onseeking);
+      MAIN_PLAYER.addEventListener('seeked', this.methods.onseeked);
+      MAIN_PLAYER.addEventListener('ratechange', this.methods.onratechange);
+      MAIN_PLAYER.addEventListener('ended', this.methods.onended);
+      MAIN_PLAYER.addEventListener('error', this.methods.onerror);
+
+      this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
+      this.methods.listenTrackChange(this.$state.getState('TRACKLIST_IDX'));
 
       this.methods.togglePlayIcon();
 
@@ -1886,26 +1878,87 @@ window.addEventListener("load", () => {
           var REPEAT = val - 1;
           this.$state.setState('REPEAT', REPEAT);
           var style = toggleRepeat();
-          this.setData({ repeat_class: style.classList, repeat_icon: style.src });
+          //this.setData({ repeat_class: style.classList, repeat_icon: style.src });
         }
       });
 
       const SHUFFLE = this.$state.getState('SHUFFLE');
-      if (SHUFFLE)
-        this.setData({ shuffle_class: '' });
-      else
-        this.setData({ shuffle_class: 'inactive' });
-
+      if (SHUFFLE) {
+        //this.setData({ shuffle_class: '' });
+      } else {
+        //this.setData({ shuffle_class: 'inactive' });
+      }
     },
     unmounted: function() {
-      this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTracklistIdx);
-      this.$state.removeStateListener('TRACK_DURATION', this.methods.listenTrackDuration);
+      this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
+      MAIN_PLAYER.removeEventListener('loadedmetadata', this.methods.onloadedmetadata);
+      MAIN_PLAYER.removeEventListener('timeupdate', this.methods.ontimeupdate);
+      MAIN_PLAYER.removeEventListener('pause', this.methods.onpause);
+      MAIN_PLAYER.removeEventListener('play', this.methods.onplay);
+      MAIN_PLAYER.removeEventListener('seeking', this.methods.onseeking);
+      MAIN_PLAYER.removeEventListener('seeked', this.methods.onseeked);
+      MAIN_PLAYER.removeEventListener('ratechange', this.methods.onratechange);
+      MAIN_PLAYER.removeEventListener('ended', this.methods.onended);
+      MAIN_PLAYER.removeEventListener('error', this.methods.onerror);
       document.removeEventListener('keydown', this.methods.skipEvent);
-      MAIN_PLAYER.ontimeupdate = null;
-      MAIN_PLAYER.onpause = null;
-      MAIN_PLAYER.onplay = null;
     },
     methods: {
+      togglePlayIcon: function() {
+        if (MAIN_PLAYER.duration > 0 && !MAIN_PLAYER.paused) {
+          MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
+        } else {
+          MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';
+        }
+      },
+      onloadedmetadata: function(evt) {
+        MAIN_THUMB_BUFF.style.visibility = 'hidden';
+        MAIN_DURATION.innerHTML = convertTime(evt.target.duration);
+        MAIN_DURATION_SLIDER.setAttribute("max", evt.target.duration);
+      },
+      ontimeupdate: function(evt) {
+        MAIN_CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
+        MAIN_DURATION.innerHTML = convertTime(evt.target.duration);
+        MAIN_DURATION_SLIDER.value = evt.target.currentTime;
+        MAIN_DURATION_SLIDER.setAttribute("max", evt.target.duration);
+        MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
+      },
+      onpause: function() {
+        MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';
+      },
+      onplay: function() {
+        MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
+      },
+      onseeking: function(evt) {
+        MAIN_THUMB_BUFF.style.visibility = 'visible';
+        MAIN_CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
+        MAIN_DURATION_SLIDER.value = evt.target.currentTime;
+      },
+      onseeked: function(evt) {
+        MAIN_THUMB_BUFF.style.visibility = 'hidden';
+      },
+      onratechange: function() {
+        this.$router.setSoftKeyCenterText(`${MAIN_PLAYER.playbackRate}x`);
+      },
+      onended: function() {
+        MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';
+      },
+      onerror: function () {
+        MAIN_PLAYER.pause();
+        MAIN_PLAY_BTN.src = '/icons/play.png';
+        this.$router.showToast('Error');
+      },
+      listenTrackChange: function(val) {
+        const T = TRACKLIST[val];
+        if (T) {
+          MAIN_THUMB_BUFF.style.visibility = 'hidden';
+          MAIN_TITLE.innerHTML = T.title || T.audio_title;
+          MAIN_THUMB.src = `https://i.ytimg.com/vi/${T.id}/hqdefault.jpg`;
+          document.getElementById('home_artist').innerHTML = T.artist || 'UNKNOWN';
+          document.getElementById('home_album').innerHTML = T.album || 'UNKNOWN';
+          document.getElementById('home_genre').innerHTML = T.genre || 'UNKNOWN';
+          document.getElementById('home_list').innerHTML = `${(val + 1).toString()}/${TRACKLIST.length.toString()}`;
+        }
+      },
       skipEvent: function (evt) {
         switch (evt.key) {
           case '1':
@@ -1940,51 +1993,13 @@ window.addEventListener("load", () => {
             break;
           case '*':
             var style = toggleRepeat(this.$router);
-            this.setData({ repeat_class: style.classList, repeat_icon: style.src });
+            // this.setData({ repeat_class: style.classList, repeat_icon: style.src });
             break;
           case '#':
             var style = toggleShuffle(this.$router);
-            this.setData({ shuffle_class: style.classList });
+            // this.setData({ shuffle_class: style.classList });
             break;
         }
-      },
-      togglePlayIcon: function() {
-        if (MAIN_PLAYER.duration > 0 && !MAIN_PLAYER.paused) {
-          this.setData({ play_icon: '/icons/img/baseline_pause_circle_filled_white_36dp.png' });
-        } else {
-          this.setData({ play_icon: '/icons/img/baseline_play_circle_filled_white_36dp.png' });
-        }
-      },
-      onpause: function() {
-        this.setData({ play_icon: '/icons/img/baseline_play_circle_filled_white_36dp.png' });
-      },
-      onplay: function() {
-        this.setData({ play_icon: '/icons/img/baseline_pause_circle_filled_white_36dp.png' });
-      },
-      listenTracklistIdx: function(val) {
-        const T = TRACKLIST[val];
-        if (T) {
-          this.setData({
-            title: T.title || T.audio_title,
-            artist: T.artist || 'UNKNOWN',
-            album: T.album || 'UNKNOWN',
-            genre: T.genre || 'UNKNOWN',
-            album_art: `https://i.ytimg.com/vi/${T.id}/hqdefault.jpg`,
-            tx_tl: `${(val + 1).toString()}/${TRACKLIST.length.toString()}`
-          });
-        }
-      },
-      listenTrackDuration: function(val) {
-        this.setData({ duration: convertTime(val), slider_max: val });
-      },
-      ontimeupdate: function(evt) {
-        const DURATION_SLIDER = document.getElementById('home_duration_slider');
-        const CURRENT_TIME = document.getElementById('home_current_time');
-        const currentTime = evt.target.currentTime;
-        this.data.current_time = convertTime(currentTime);
-        CURRENT_TIME.innerHTML = this.data.current_time;
-        this.data.slider_value = currentTime;
-        DURATION_SLIDER.value = currentTime;
       }
     },
     softKeyText: { left: 'Tracklist', center: '', right: 'Menu' },

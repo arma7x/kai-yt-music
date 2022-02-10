@@ -53,25 +53,26 @@
   <div class="kai-container" style="margin:5px;">
     <div>
       <h3 class="marquee">
-        <span>{{ title }}</span>
+        <span id="main_title">YT Music</span>
       </h3>
     </div>
     <div class="kui-row-center" style="margin-top:5px;justify-content:start;">
-      <div style="border:1px solid #ff0000;width:35%;height:78.75px;background:#ccc;display:flex;flex-direction:column;justify-content:center;align-items: center;">
-        <img id="album_cover" height="100%" width="100%" style="object-fit:cover;" src="{{ album_art }}" />
+      <div style="position:relative;border:1px solid #ff0000;width:35%;height:78.75px;background:#ccc;display:flex;flex-direction:column;justify-content:center;align-items: center;">
+        <img id="thumb_buffering" height="100%" width="100%" style="position:absolute;top:0;left:-1px;" src="/icons/img/loading.gif"/>
+        <img id="main_thumb" height="100%" width="100%" style="object-fit:cover;" src="/icons/img/baseline_person_white_36dp.png" />
       </div>
       <div style="width:65%;height:78.75px;padding:0px 0px 0px 5px;justify-content:flex-end;overflow:hidden;">
         <div class="kui-row-center" style="justify-content:flex-start;">
           <img width="15xp" height="15xp" src="/icons/img/baseline_person_white_36dp.png"/>
-          <pre style="padding-left:5px;">{{ artist }}</pre>
+          <pre id="home_artist" style="padding-left:5px;">Artist</pre>
         </div>
         <div class="kui-row-center" style="justify-content:start;">
           <img width="15xp" height="15xp" src="/icons/img/baseline_album_white_36dp.png"/>
-          <pre style="padding-left:5px;">{{ album }}</pre>
+          <pre id="home_album" style="padding-left:5px;">Album</pre>
         </div>
         <div class="kui-row-center" style="justify-content:start;">
           <img width="15xp" height="15xp" src="/icons/img/baseline_music_note_white_36dp.png"/>
-          <pre style="padding-left:5px;">{{ genre }}</pre>
+          <pre id="home_genre" style="padding-left:5px;">Genre</pre>
         </div>
       </div>
     </div>
@@ -82,18 +83,18 @@
       <div style="width:100px;text-align:right;">
         <div class="kui-row-center" style="justify-content:end;">
           <img width="16xp" height="16xp" src="/icons/img/baseline_playlist_play_white_36dp.png"/>
-          <pre style="padding-left:5px;">{{ tx_tl }}</pre>
+          <pre id="home_list" style="padding-left:5px;">0/0</pre>
         </div>
       </div>
     </div>
 
     <div style="margin-top:5px">
-      <input id="home_duration_slider" style="width:99%;background-color:#ffffff00;border-color:#c0c0c0;" value="{{ slider_value }}" type="range" min="0" max="{{ slider_max }}" disabled/>
+      <input id="main_duration_slider" style="width:99%;background-color:#ffffff00;border-color:#c0c0c0;" value="0" type="range" min="0" max="100" disabled/>
     </div>
     <div class="kui-row-center" style="margin-top:5px">
-      <div id="home_current_time">{{ current_time }}</div>
-      <img id="play_btn" width="36px" height="36px" src="{{ play_icon }}"/>
-      <div>{{ duration }}</div>
+      <div id="main_current_time" style="width:34%;">00:00</div>
+      <img id="main_play_btn" width="36px" height="36px" src="/icons/img/baseline_play_circle_filled_white_36dp.png"/>
+      <div id="main_duration" style="width:34%;text-align:right;">00:00</div>
     </div>
   </div>
 </div>
