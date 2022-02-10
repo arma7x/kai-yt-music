@@ -1838,9 +1838,7 @@ window.addEventListener("load", () => {
   const home = new Kai({
     name: 'home',
     data: {
-      repeat_class: 'inactive',
-      repeat_icon: '/icons/img/baseline_repeat_white_18dp.png',
-      shuffle_class: 'inactive',
+      title: 'YT Music',
     },
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
@@ -1864,13 +1862,12 @@ window.addEventListener("load", () => {
       MAIN_PLAYER.addEventListener('ratechange', this.methods.onratechange);
       MAIN_PLAYER.addEventListener('ended', this.methods.onended);
       MAIN_PLAYER.addEventListener('error', this.methods.onerror);
+      document.addEventListener('keydown', this.methods.onKeydown);
 
       this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
       this.methods.listenTrackChange(this.$state.getState('TRACKLIST_IDX'));
 
       this.methods.togglePlayIcon();
-
-      document.addEventListener('keydown', this.methods.skipEvent);
 
       localforage.getItem('REPEAT')
       .then((val) => {
@@ -1900,7 +1897,7 @@ window.addEventListener("load", () => {
       MAIN_PLAYER.removeEventListener('ratechange', this.methods.onratechange);
       MAIN_PLAYER.removeEventListener('ended', this.methods.onended);
       MAIN_PLAYER.removeEventListener('error', this.methods.onerror);
-      document.removeEventListener('keydown', this.methods.skipEvent);
+      document.removeEventListener('keydown', this.methods.onKeydown);
     },
     methods: {
       togglePlayIcon: function() {
@@ -1959,7 +1956,7 @@ window.addEventListener("load", () => {
           document.getElementById('home_list').innerHTML = `${(val + 1).toString()}/${TRACKLIST.length.toString()}`;
         }
       },
-      skipEvent: function (evt) {
+      onKeydown: function (evt) {
         switch (evt.key) {
           case '1':
             var threshold = new Date().getTime() - LFT_DBL_CLICK_TH;
@@ -1990,6 +1987,19 @@ window.addEventListener("load", () => {
                 }
               }, 500);
             }
+            break;
+          case '2':
+            if (MAIN_PLAYER.playbackRate >= 4)
+              return
+            MAIN_PLAYER.playbackRate += 0.25;
+            break;
+          case '5':
+            MAIN_PLAYER.playbackRate = 1;
+            break;
+          case '8':
+            if (MAIN_PLAYER.playbackRate <= 0.5)
+              return
+            MAIN_PLAYER.playbackRate -= 0.25;
             break;
           case '*':
             var style = toggleRepeat(this.$router);
