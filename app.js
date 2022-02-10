@@ -1,24 +1,21 @@
 localforage.setDriver(localforage.INDEXEDDB);
+const MIME = {"audio/aac":"aac","audio/x-aac":"aac","audio/adpcm":"adp","application/vnd.audiograph":"aep","audio/x-aiff":"aif","audio/amr":"amr","audio/basic":"au","audio/x-caf":"caf","audio/vnd.dra":"dra","audio/vnd.dts":"dts","audio/vnd.dts.hd":"dtshd","audio/vnd.nuera.ecelp4800":"ecelp4800","audio/vnd.nuera.ecelp7470":"ecelp7470","audio/vnd.nuera.ecelp9600":"ecelp9600","audio/vnd.digital-winds":"eol","audio/x-flac":"flac","audio/vnd.lucent.voice":"lvp","audio/x-mpegurl":"m3u","audio/x-m4a":"m4a","audio/midi":"mid","audio/x-matroska":"mka","audio/mpeg":"mp3","audio/mp4":"mp4a","audio/mobile-xmf":"mxmf","audio/ogg":"opus","audio/vnd.ms-playready.media.pya":"pya","audio/x-realaudio":"ra","audio/x-pn-realaudio":"ram","audio/vnd.rip":"rip","audio/x-pn-realaudio-plugin":"rmp","audio/s3m":"s3m","application/vnd.yamaha.smaf-audio":"saf","audio/silk":"sil","audio/vnd.dece.audio":"uva","audio/x-wav":"wav","audio/x-ms-wax":"wax","audio/webm":"weba","audio/x-ms-wma":"wma","audio/xm":"xm"};
 
 const CACHED_DECRYPTOR = {};
-const OLD_PLAYLIST = 'YT_PLAYLIST';
 const OLD_PLAYING = 'YT_PLAYING';
 
 const DEFAULT_VOLUME = 0.02;
 const SDCARD = navigator.getDeviceStorage('sdcard');
 
-// DB START 
-
 const DB_NAME = 'YT_MUSIC';
 
-const DB_AUDIO_CURSOR = 'COLLECTIONS';
-const DB_AUDIO = 'YT_AUDIO'; // DB_AUDIO_CURSOR { id: { ...metadata } }
+const DB_AUDIO = 'YT_AUDIO'; // { id: { ...metadata } }
 const T_AUDIO = localforage.createInstance({
   name: DB_NAME,
   storeName: DB_AUDIO
 });
 
-const DB_PLAYLIST = 'YT_PLAYLIST'; // { id: {name, playlistURL, collections: []} }
+const DB_PLAYLIST = 'YT_PLAYLIST'; // { id: {name, sync, collections: []} }
 const T_PLAYLIST = localforage.createInstance({
   name: DB_NAME,
   storeName: DB_PLAYLIST
@@ -38,29 +35,9 @@ const T_CONFIGURATION = localforage.createInstance({
   storeName: DB_CONFIGURATION
 });
 
-// DB END
-
 var MAIN_DURATION_SLIDER;
 var MAIN_CURRENT_TIME;
 var MAIN_DURATION;
-
-function saveBlobToStorage(blob, name, cb = () => {}) {
-  var mime = blob.type.split('/')[1];
-  var path = 'ytm';
-  if (SDCARD.storageName !== '') {
-    path = `/${SDCARD.storageName}/ytm`;
-  }
-  path = `${path}/${new Date().getTime().toString()}_${name}.${mime}`;
-  const addFile = SDCARD.addNamed(blob, path);
-  addFile.onsuccess = (evt) => {
-    cb(path);
-  }
-  addFile.onerror = (err) => {
-    console.log(err);
-    cb(false);
-  }
-  console.log(path);
-}
 
 var LFT_DBL_CLICK_TH = 0;
 var LFT_DBL_CLICK_TIMER = undefined;
@@ -99,6 +76,28 @@ function convertTime(time) {
     secs = "0" + String(secs);
   }
   return hours + mins + ":" + secs;
+}
+
+function readableFileSize(bytes, si = false, dp = 1) {
+  if (typeof bytes !== 'number') {
+    try {
+      bytes = JSON.parse(bytes);
+    } catch(e) {
+      return false;
+    }
+  }
+  const thresh = si ? 1000 : 1024;
+  if (Math.abs(bytes) < thresh) {
+    return bytes + ' Byte';
+  }
+  const units = si  ? ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+  let u = -1;
+  const r = Math.pow(10, dp);
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+  return bytes.toFixed(dp) + '' + units[u];
 }
 
 function toggleVolume(MINI_PLAYER, $router) {
@@ -246,9 +245,12 @@ window.addEventListener("load", () => {
     }
   });
 
+  const DS = new DataStorage(() => {}, () => {}, false);
+  (navigator.b2g ? navigator.b2g.getDeviceStorages('sdcard') : navigator.getDeviceStorages('sdcard'))[0].get('trigger_permission');
+
   var TRACK_NAME = '';
   var TRACKLIST = [];
-  var TRACKLIST_ORDER = [];
+  var TRACKLIST_DEFAULT_SORT = [];
 
   const state = new KaiState({
     CONFIGURATION: {},
@@ -334,7 +336,7 @@ window.addEventListener("load", () => {
       state.setState('TRACKLIST_IDX', 0);
     } else {
       const v_id = TRACKLIST[state.getState('TRACKLIST_IDX')].id;
-      TRACKLIST = JSON.parse(JSON.stringify(TRACKLIST_ORDER));
+      TRACKLIST = JSON.parse(JSON.stringify(TRACKLIST_DEFAULT_SORT));
       const idx = TRACKLIST.findIndex((t) => {
         return t.id === v_id;
       });
@@ -369,7 +371,7 @@ window.addEventListener("load", () => {
   }
 
   function init(from = null) {
-    console.log('INIT APP:', from);
+    console.log('INIT_APP:', from);
     localforage.getItem('SHUFFLE')
     .then((SHUFFLE) => {
       if (SHUFFLE == null)
@@ -402,7 +404,6 @@ window.addEventListener("load", () => {
     console.log(err);
   });
 
-//console.log(state.getState('DATABASE'));
   T_AUDIO.keys()
   .then((keys) => {
     var success = 0;
@@ -434,66 +435,61 @@ window.addEventListener("load", () => {
     init(err.toString());
   });
 
-  localforage.getItem(OLD_PLAYLIST)
-  .then((PLAYLIST) => {
-    if (PLAYLIST == null) {
-      PLAYLIST = {};
-    }
-    state.setState('PLAYLIST', PLAYLIST);
+  T_PLAYLIST.keys()
+  .then((keys) => {
+    keys.forEach((key) => {
+      T_PLAYLIST.getItem(key.toString())
+      .then((value) => {
+        const list = state.getState('PLAYLIST');
+        list[key] = value;
+        state.setState('PLAYLIST', list);
+      })
+    });
+  })
+  .catch((err) => {
+    console.log(err);
   });
 
   function playDefaultPlaylist() {
     TRACKLIST = [];
-    TRACKLIST_ORDER = [];
+    TRACKLIST_DEFAULT_SORT = [];
     localforage.removeItem(OLD_PLAYING);
     state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
-    var tracks = state.getState('DATABASE');
+    const tracks = state.getState('DATABASE');
     for (var y in tracks) {
       TRACKLIST.push(tracks[y]);
-      TRACKLIST_ORDER.push(tracks[y]);
+      TRACKLIST_DEFAULT_SORT.push(tracks[y]);
     }
     shuffling();
     playMainAudio(state.getState('TRACKLIST_IDX'));
   }
 
   function playPlaylistById(id) {
-    localforage.getItem(OLD_PLAYLIST)
-    .then((PLAYLIST) => {
-      if (PLAYLIST == null) {
-        PLAYLIST = {};
+    T_PLAYLIST.getItem(id.toString())
+    .then((result) => {
+      if (result == null) {
+        playDefaultPlaylist();
+        return Promise.reject('Playlist not exist');
       }
-      if (PLAYLIST[id]) {
-        if (PLAYLIST[id].collections.length === 0) {
-          return Promise.reject('Empty Playlist');
-        }
-        return Promise.resolve(PLAYLIST[id]);
-      }
-      playDefaultPlaylist();
-      return Promise.reject('Playlist not exist');
+      return Promise.resolve(result);
     })
-    .then((PLYLST) => {
-      T_AUDIO.getItem(DB_AUDIO_CURSOR)
-      .then((DATABASE) => {
-        const collections = []
-        if (DATABASE == null) {
-          router.showToast('Empty Database');
-        } else {
-          PLYLST.collections.forEach((c) => {
-            if (DATABASE[c]) {
-              collections.push(DATABASE[c]);
-            }
-          });
-          state.setState('TRACKLIST_IDX', 0);
-          TRACK_NAME = PLYLST.name;
-          TRACKLIST = collections;
-          TRACKLIST_ORDER = JSON.parse(JSON.stringify(collections));
-          shuffling();
-          playMainAudio(state.getState('TRACKLIST_IDX'));
-          router.showToast(`PLAYING ${TRACK_NAME}`);
-          localforage.setItem(OLD_PLAYING, PLYLST.id);
+    .then((playlist) => {
+      const tracks = state.getState('DATABASE');
+      const list = []
+      playlist.collections.forEach((c) => {
+        if (tracks[c]) {
+          list.push(tracks[c]);
         }
       });
+      state.setState('TRACKLIST_IDX', 0);
+      TRACK_NAME = playlist.name;
+      TRACKLIST = list;
+      TRACKLIST_DEFAULT_SORT = JSON.parse(JSON.stringify(list));
+      shuffling();
+      playMainAudio(state.getState('TRACKLIST_IDX'));
+      router.showToast(`PLAYING ${TRACK_NAME}`);
+      localforage.setItem(OLD_PLAYING, playlist.id);
     })
     .catch((e) => {
       router.showToast(e.toString());
@@ -549,61 +545,134 @@ window.addEventListener("load", () => {
     });
   }
 
-  function downloadAudio($router, audio) {
-    $router.showLoading();
-    getAudioStreamURL(audio.id)
-    .then((url) => {
-      $router.hideLoading();
+  function downloadAudio($router, audio, cb = () => {}) {
+    return new Promise((resolve, reject) => {
       $router.showLoading();
-      const down = new XMLHttpRequest({ mozSystem: true });
-      down.open('GET', url, true);
-      down.responseType = 'blob';
-      down.onload = (evt) => {
-        saveBlobToStorage(evt.currentTarget.response, `${audio.id}_${audio.title}`, (localPath) => {
-          if (localPath === false) {
-            $router.showToast("Error SAVING");
-          } else {
-            obj.local_stream = localPath;
-            // obj
-          }
-          $router.hideLoading();
-        });
-      }
-      down.onprogress = (evt) => {
-        if (evt.lengthComputable) {
-          var percentComplete = evt.loaded / evt.total * 100;
-          $router.showToast(`${percentComplete.toFixed(2)}%`);
-        }
-      }
-      down.onerror = (err) => {
+      getAudioStreamURL(audio.id)
+      .then((url) => {
+        console.log(url);
+        var BAR, CUR, MAX;
+        var start = 0;
+        var loaded = 0;
+        var req = new XMLHttpRequest({ mozSystem: true });
+        req.open('GET', url, true);
+        req.responseType = 'blob';
+        $router.showBottomSheet(
+          new Kai({
+            name: 'downloaderPopup',
+            data: {
+              title: 'downloaderPopup',
+              downloading: false,
+            },
+            templateUrl: document.location.origin + '/templates/downloaderPopup.html',
+            softKeyText: { left: 'Cancel', center: '0KB/S', right: '0%' },
+            softKeyListener: {
+              left: function() {
+                $router.hideBottomSheet();
+                req.abort();
+              },
+              center: function() {},
+              right: function() {}
+            },
+            mounted: function() {
+              const lock = navigator.b2g || navigator;
+              WAKE_LOCK = lock.requestWakeLock('cpu');
+              BAR = document.getElementById('download_bar');
+              CUR = document.getElementById('download_cur');
+              MAX = document.getElementById('download_max');
+              req.onprogress = this.methods.onprogress;
+              req.onreadystatechange = this.methods.onreadystatechange;
+              req.onerror = this.methods.onerror;
+              start = new Date().getTime();
+              req.send();
+            },
+            unmounted: function() {
+              if (WAKE_LOCK) {
+                WAKE_LOCK.unlock();
+                WAKE_LOCK = null;
+              }
+              resolve(audio);
+              setTimeout(cb, 100);
+            },
+            methods: {
+              onprogress: function(evt) {
+                if (evt.lengthComputable) {
+                  var end = new Date().getTime();
+                  var elapsed = end - start;
+                  start = end;
+                  var percentComplete = evt.loaded / evt.total * 100;
+                  const frag = evt.loaded - loaded;
+                  loaded = evt.loaded;
+                  const speed = (frag / elapsed) * 1000;
+                  BAR.style.width = `${percentComplete.toFixed(2)}%`;
+                  CUR.innerHTML = `${readableFileSize(evt.loaded, true, 2)}`;
+                  $router.setSoftKeyCenterText(`${readableFileSize(Math.round(speed), true)}/s`);
+                  $router.setSoftKeyRightText(BAR.style.width);
+                  MAX.innerHTML = `${readableFileSize(evt.total, true, 2)}`;
+                }
+              },
+              onreadystatechange: function(evt) {
+                if (evt.currentTarget.readyState === 4) {
+                  if (evt.currentTarget.response != null && evt.currentTarget.status >= 200 && evt.currentTarget.status <= 399) {
+                    var ext = 'mp3';
+                    if (MIME[evt.currentTarget.response.type] != null) {
+                      ext = MIME[evt.currentTarget.response.type];
+                    }
+                    var localPath = ['ytm', 'cache'];
+                    if (DS.deviceStorage.storageName != '') {
+                      localPath = [DS.deviceStorage.storageName, ...localPath];
+                    }
+                    DS.addFile(localPath, `${audio.id}.${ext}`, evt.currentTarget.response)
+                    .then((file) => {
+                      audio['local_stream'] = file.name;
+                      $router.setSoftKeyCenterText('SUCCESS');
+                      $router.setSoftKeyLeftText('Close');
+                      if (WAKE_LOCK) {
+                        WAKE_LOCK.unlock();
+                        WAKE_LOCK = null;
+                      }
+                    })
+                    .catch((err) => {
+                      console.log(err);
+                      $router.setSoftKeyCenterText('FAIL');
+                      $router.setSoftKeyLeftText('Exit');
+                    });
+                  }
+                }
+              },
+              onerror: function(err) {
+                console.log(err);
+                $router.setSoftKeyCenterText('FAIL');
+                $router.setSoftKeyRightText('Exit');
+                $router.showToast('Network Error');
+              }
+            },
+            backKeyListener: function(evt) {
+              return true;
+            }
+          })
+        );
+      })
+      .catch((e) => {
+        $router.showToast("Stream Unavailable");
+      })
+      .finally(() => {
         $router.hideLoading();
-        $router.showToast("Error DOWNLOADING");
-      }
-      down.send();
-    })
-    .catch((e) => {
-      $router.hideLoading();
-      $router.showToast("Error GET");
+      });
     });
   }
 
-  function playMainAudio(idx) {
-    if (TRACKLIST[idx] == null) {
-      return
-    }
-
-    if (false) { // TRACKLIST[idx].local_stream
-      var request = SDCARD.get(TRACKLIST[idx].local_stream);
-      request.onsuccess = (file) => {
-        MAIN_PLAYER.mozAudioChannelType = 'content';
-        MAIN_PLAYER.src = URL.createObjectURL(file.target.result);
-        MAIN_PLAYER.play();
-      }
-      request.onerror = (error) => {
-        console.warn("Unable to get the file: " + error.toString());
-      }
-    } else {
-      getCachedURL(TRACKLIST[idx].id)
+  function playMainAudioFallback(audio) {
+    getCachedURL(audio.id)
+    .then((url) => {
+      console.log(url);
+      MAIN_PLAYER.mozAudioChannelType = 'content';
+      MAIN_PLAYER.src = url;
+      MAIN_PLAYER.play();
+    })
+    .catch((err) => {
+      console.log(err);
+      getAudioStreamURL(audio.id)
       .then((url) => {
         console.log(url);
         MAIN_PLAYER.mozAudioChannelType = 'content';
@@ -612,17 +681,28 @@ window.addEventListener("load", () => {
       })
       .catch((err) => {
         console.log(err);
-        getAudioStreamURL(TRACKLIST[idx].id)
-        .then((url) => {
-          console.log(url);
-          MAIN_PLAYER.mozAudioChannelType = 'content';
-          MAIN_PLAYER.src = url;
-          MAIN_PLAYER.play();
-        })
-        .catch((err) => {
-          console.log(err);
-        });
       });
+    });
+  }
+
+  function playMainAudio(idx) {
+    if (TRACKLIST[idx] == null) {
+      return;
+    }
+    if (TRACKLIST[idx].local_stream) {
+      console.log(TRACKLIST[idx].local_stream);
+      DS.__getFile__(TRACKLIST[idx].local_stream)
+      .then((file) => {
+        MAIN_PLAYER.mozAudioChannelType = 'content';
+        MAIN_PLAYER.src = window.URL.createObjectURL(file);
+        MAIN_PLAYER.play();
+      })
+      .catch((err) => {
+        playMainAudioFallback(TRACKLIST[idx]);
+        console.warn("Unable to get the file: " + err.toString());
+      });
+    } else {
+      playMainAudioFallback(TRACKLIST[idx]);
     }
   }
 
@@ -862,37 +942,33 @@ window.addEventListener("load", () => {
         this.setData({ playlists: playlists });
         this.methods.renderSoftKeyLCR();
       },
-      playlistEditor: function(name = '', id = null) { // TODO
+      playlistEditor: function(name = '', id = new Date().getTime()) {
+        var isUpdate = false;
         var oldName = '';
-        name = name.trim();
+        name = name.toString().trim();
         if (name.length === 0) {
           this.$router.showToast('Playlist name is required');
         } else {
-          localforage.getItem(OLD_PLAYLIST)
-          .then((PLAYLIST) => {
-            if (PLAYLIST == null) {
-              PLAYLIST = {};
-            }
-            const pid = id || new Date().getTime();
-            if (PLAYLIST[pid]) {
-              oldName = PLAYLIST[pid].name.toString();
-              PLAYLIST[pid].name = name;
+          T_PLAYLIST.getItem(id.toString())
+          .then((playlist) => {
+            if (playlist == null) {
+              playlist = { id: id, name: name, sync: false, collections: [] };
             } else {
-              const obj = { id: pid, name: name, collections: [] };
-              PLAYLIST[pid] = obj;
+              isUpdate = true;
+              oldName = playlist.name;
+              playlist.name = name;
             }
-            localforage.setItem(OLD_PLAYLIST, PLAYLIST);
+            return T_PLAYLIST.setItem(id.toString(), playlist);
           })
-          .then(() => {
-            return localforage.getItem(OLD_PLAYLIST);
-          })
-          .then((UPDATED_PLAYLIST) => {
+          .then((saved) => {
             var msg = `${name} added to Playlist`;
-            if (id) {
+            if (isUpdate) {
               msg = `${oldName} updated to ${name}`;
             }
             this.$router.showToast(msg);
-            this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
+            const PLAYLIST = state.getState('PLAYLIST');
+            PLAYLIST[saved.id] = saved;
+            state.setState('PLAYLIST', PLAYLIST);
             this.methods.getPlaylist();
           })
           .catch((err) => {
@@ -905,7 +981,7 @@ window.addEventListener("load", () => {
     softKeyText: { left: 'Add', center: '', right: '' },
     softKeyListener: {
       left: function() {
-        playlistEditor(this, '', null);
+        playlistEditor(this, '', new Date().getTime());
       },
       center: function() {
         const _selected = this.data.playlists[this.verticalNavIndex];
@@ -924,8 +1000,8 @@ window.addEventListener("load", () => {
           this.$router.showOptionMenu('Action', menus, 'Select', (selected) => {
             if (selected.text === 'Tracklist') {
               const DB = this.$state.getState('DATABASE');
-              const PLYLS = this.$state.getState('PLAYLIST');
-              const cur = PLYLS[_selected.id];
+              const PLAYLIST = this.$state.getState('PLAYLIST');
+              const cur = PLAYLIST[_selected.id];
               if (cur) {
                 if (cur.collections.length > 0) {
                   var collections = [];
@@ -942,15 +1018,11 @@ window.addEventListener("load", () => {
                           _tracklist.push(v.id);
                         }
                       });
-                      // console.log(_tracklist);
-                      PLYLS[_selected.id].collections = _tracklist;
-                      localforage.setItem(OLD_PLAYLIST, PLYLS)
-                      .then(() => {
-                        return localforage.getItem(OLD_PLAYLIST);
-                      })
-                      .then((UPDATED_PLAYLIST) => {
+                      PLAYLIST[_selected.id].collections = _tracklist;
+                      T_PLAYLIST.setItem(_selected.id.toString(), PLAYLIST[_selected.id])
+                      .then((saved) => {
                         this.$router.showToast('DONE');
-                        this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
+                        this.$state.setState('PLAYLIST', PLAYLIST);
                       })
                       .catch((err) => {
                         this.$router.showToast(err.toString());
@@ -968,18 +1040,15 @@ window.addEventListener("load", () => {
             } else if (selected.text === 'Update') {
               playlistEditor(this, _selected.name, _selected.id);
             } else if (selected.text === 'Delete'){
-              const PLYLS = this.$state.getState('PLAYLIST');
-              if (PLYLS[_selected.id]) {
+              const PLAYLIST = this.$state.getState('PLAYLIST');
+              if (PLAYLIST[_selected.id]) {
                 this.$router.showDialog('Delete', `Are you sure to remove ${_selected.name} ?`, null, 'Yes', () => {
-                  delete PLYLS[_selected.id];
-                  localforage.setItem(OLD_PLAYLIST, PLYLS)
+                  delete PLAYLIST[_selected.id];
+                  T_PLAYLIST.removeItem(_selected.id.toString())
                   .then(() => {
-                    return localforage.getItem(OLD_PLAYLIST);
-                  })
-                  .then((UPDATED_PLAYLIST) => {
                     this.$router.showToast(`${_selected.name} deleted`);
-                    this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
-                    this.verticalNavIndex = -1;
+                    this.$state.setState('PLAYLIST', PLAYLIST);
+                    this.verticalNavIndex -= 1;
                     this.methods.getPlaylist();
                   })
                   .catch((err) => {
@@ -1083,9 +1152,10 @@ window.addEventListener("load", () => {
                   $router.showToast('Saved');
                   const list = state.getState('DATABASE');
                   list[audio.id] = metadata;
-                  state.setState('DATABASE', list);
-                  console.log(state.getState('DATABASE'));
                   $router.pop();
+                  setTimeout(() => {
+                    state.setState('DATABASE', list);
+                  }, 103);
                 })
                 .catch((err) => {
                   console.log(err);
@@ -1164,13 +1234,12 @@ window.addEventListener("load", () => {
               return -1;
             return 0;
           });
-          // console.log(audio);
           if (audio.length > 0) {
             this.methods.showPlayOption(audio);
           }
         })
         .catch((err) => {
-          // console.log(err);
+          console.log(err);
         })
         .finally(() => {
           this.$router.hideLoading();
@@ -1179,7 +1248,6 @@ window.addEventListener("load", () => {
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
           playMiniAudio(this.$router, selected);
-          // console.log(selected);
         }, () => {
           setTimeout(() => {
             this.methods.renderSoftKeyLCR();
@@ -1191,11 +1259,11 @@ window.addEventListener("load", () => {
         searchVideo(q)
         .then((data) => {
           this.verticalNavIndex = -1;
-          var videos = [];
+          var audios = [];
           data.results.forEach((t) => {
             if (t.video) {
               t.video.isAudio = true;
-              videos.push(t.video);
+              audios.push(t.video);
             }
           });
           this.setData({
@@ -1204,7 +1272,7 @@ window.addEventListener("load", () => {
             estimatedResults: data.estimatedResults,
             nextPageToken: data.nextPageToken || null,
           });
-          this.methods.processResult(videos);
+          this.methods.processResult(audios);
         })
         .catch((err) => {
           console.log(err.toString());
@@ -1217,11 +1285,11 @@ window.addEventListener("load", () => {
         this.$router.showLoading();
         searchVideo("", this.data.key, this.data.nextPageToken)
         .then((data) => {
-          var videos = [];
+          var audios = [];
           data.results.forEach((t) => {
             if (t.video) {
               t.video.isAudio = true;
-              videos.push(t.video);
+              audios.push(t.video);
             }
           });
           this.setData({
@@ -1229,7 +1297,7 @@ window.addEventListener("load", () => {
             estimatedResults: data.estimatedResults,
             nextPageToken: data.nextPageToken || null,
           });
-          this.methods.processResult(videos);
+          this.methods.processResult(audios);
         })
         .catch((err) => {
           console.log(err.toString());
@@ -1238,12 +1306,12 @@ window.addEventListener("load", () => {
           this.$router.hideLoading();
         });
       },
-      processResult: function(videos) {
+      processResult: function(audios) {
         const last = this.data.results[this.data.results.length - 1];
         if (last && !last.isAudio) {
           this.data.results.pop();
         }
-        const merged = [...this.data.results, ...videos];
+        const merged = [...this.data.results, ...audios];
         if (this.data.nextPageToken) {
           merged.push({ isAudio: false });
         }
@@ -1376,14 +1444,26 @@ window.addEventListener("load", () => {
     verticalNavClass: '.searchNav',
     templateUrl: document.location.origin + '/templates/search.html',
     mounted: function() {
+      this.$state.addStateListener('DATABASE', this.methods.dbStateListener);
       this.$router.setHeaderTitle('Local Database');
       if (this.data.results.length === 0) {
         this.methods.resetSearch();
       }
       this.methods.renderSoftKeyLCR();
     },
-    unmounted: function() {},
+    unmounted: function() {
+      this.$state.removeStateListener('DATABASE', this.methods.dbStateListener);
+    },
     methods: {
+      dbStateListener: function(db) {
+        this.$router.showLoading();
+        const temp = this.data.results;
+        const item = temp[this.verticalNavIndex];
+        Object.assign(item, db[item.id]);
+        temp[this.verticalNavIndex] = item;
+        this.setData({ results: temp });
+        this.$router.hideLoading();
+      },
       selected: function(vid) {
         this.$router.showLoading();
         getVideoLinks(vid.id)
@@ -1407,7 +1487,6 @@ window.addEventListener("load", () => {
               return -1;
             return 0;
           });
-          // console.log(audio);
           if (audio.length > 0) {
             this.methods.showPlayOption(audio);
           }
@@ -1422,50 +1501,49 @@ window.addEventListener("load", () => {
       showPlayOption: function(formats) {
         this.$router.showOptionMenu('Select Format', formats, 'Select', (selected) => {
           playMiniAudio(this.$router, selected);
-          // console.log(selected);
         }, () => {
           setTimeout(() => {
             this.methods.renderSoftKeyLCR();
           }, 100);
         }, 0);
       },
-      presentInPlaylist: function(video) {
-        var presents = []
-        const src = this.$state.getState('PLAYLIST');
-        for (var y in src) {
+      presentInPlaylist: function(audio) {
+        var _playlist = []
+        const PLAYLIST = this.$state.getState('PLAYLIST');
+        for (var y in PLAYLIST) {
           var checked = false;
-          if (src[y].collections.indexOf(video.id) > -1) {
+          if (PLAYLIST[y].collections.indexOf(audio.id) > -1) {
             checked = true;
           }
-          presents.push({ "text": src[y].name, "id": src[y].id, "checked": checked });
+          _playlist.push({ "text": PLAYLIST[y].name, "id": PLAYLIST[y].id, "checked": checked });
         }
-        if (presents.length === 0) {
+        if (_playlist.length === 0) {
           this.$router.showToast("Empty Playlist");
         } else {
-          this.$router.showMultiSelector('Playlist', presents, 'Select', null, 'Save', (_presents_) => {
-            _presents_.forEach((p) => {
-              const idx = src[p.id].collections.indexOf(video.id);
+          this.$router.showMultiSelector('Playlist', _playlist, 'Select', null, 'Save', (cursor) => {
+            cursor.forEach((p) => {
+              const idx = PLAYLIST[p.id].collections.indexOf(audio.id);
               if (p.checked) {
                 if (idx === -1){
-                  src[p.id].collections.push(video.id);
+                  PLAYLIST[p.id].collections.push(audio.id);
                 }
               } else {
                 if (idx > -1){
-                  src[p.id].collections.splice(idx, 1);
+                  PLAYLIST[p.id].collections.splice(idx, 1);
                 }
               }
             });
-            localforage.setItem(OLD_PLAYLIST, src)
-            .then(() => {
-              return localforage.getItem(OLD_PLAYLIST);
-            })
-            .then((UPDATED_PLAYLIST) => {
-              this.$router.showToast('DONE');
-              this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
-            })
-            .catch((err) => {
-              this.$router.showToast(err.toString());
-            });
+            var done = Object.keys(PLAYLIST).length;
+            for (var key in PLAYLIST) {
+              T_PLAYLIST.setItem(key, PLAYLIST[key])
+              .finally(() => {
+                done--;
+                if (done === 0) {
+                  this.$state.setState('PLAYLIST', PLAYLIST);
+                  this.$router.showToast('DONE');
+                }
+              });
+            }
           }, 'Cancel', null, () => {
             setTimeout(() => {
               this.methods.renderSoftKeyLCR();
@@ -1473,34 +1551,28 @@ window.addEventListener("load", () => {
           }, 0);
         }
       },
-      deleteAudio: function(video) {
-        var affected = [];
+      deleteAudio: function(audio) {
+        var playlists = [];
         const DB = this.$state.getState('DATABASE');
-        const PLYLS = this.$state.getState('PLAYLIST');
-        if (DB[video.id]) {
-          this.$router.showDialog('Delete', `Are you sure to remove ${video.audio_title} ?`, null, 'Yes', () => {
-            for (var y in PLYLS) {
-              const idx = PLYLS[y].collections.indexOf(video.id);
+        const PLAYLIST = this.$state.getState('PLAYLIST');
+        if (DB[audio.id]) {
+          this.$router.showDialog('Delete', `Are you sure to remove ${audio.audio_title} ?`, null, 'Yes', () => {
+            for (var y in PLAYLIST) {
+              const idx = PLAYLIST[y].collections.indexOf(audio.id);
               if (idx > -1){
-                PLYLS[y].collections.splice(idx, 1);
-                affected.push(PLYLS[y].name);
+                PLAYLIST[y].collections.splice(idx, 1);
+                playlists.push(PLAYLIST[y]);
               }
             }
-            if (affected.length > 0) {
-              localforage.setItem(OLD_PLAYLIST, PLYLS)
-              .then(() => {
-                return localforage.getItem(OLD_PLAYLIST);
-              })
-              .then((UPDATED_PLAYLIST) => {
-                this.$state.setState('PLAYLIST', UPDATED_PLAYLIST);
-              })
-              .catch((err) => {
-                console.log(err);
+            if (playlists.length > 0) {
+              playlists.forEach((cursor) => {
+                T_PLAYLIST.setItem(cursor.id.toString(), cursor);
               });
+              this.$state.setState('PLAYLIST', PLAYLIST);
             }
-            T_AUDIO.removeItem(video.id)
+            T_AUDIO.removeItem(audio.id)
             .then(() => {
-              delete DB[video.id];
+              delete DB[audio.id];
               this.$router.showToast('Deleted');
               this.$state.setState('DATABASE', DB);
               this.methods.resetSearch();
@@ -1526,7 +1598,7 @@ window.addEventListener("load", () => {
         }
         this.data.results = [];
         this.data.bulk_results = bulk_results;
-        this.methods.processResult(0);
+        this.methods.nextPage(0);
       },
       search: function(keyword = '') {
         keyword = keyword.trim();
@@ -1552,11 +1624,10 @@ window.addEventListener("load", () => {
           this.verticalNavIndex = -1;
           this.data.results = [];
           this.data.bulk_results = bulk_results;
-          console.log(this.data.bulk_results);
-          this.methods.processResult(0);
+          this.methods.nextPage(0);
         }
       },
-      processResult: function(page = 0) {
+      nextPage: function(page = 0) {
         const last = this.data.results[this.data.results.length - 1];
         if (last && !last.isAudio) {
           this.data.results.pop();
@@ -1660,7 +1731,7 @@ window.addEventListener("load", () => {
             this.methods.selected(selected);
           else {
             if (this.data.nextPage != null)
-            this.methods.processResult(this.data.nextPage);
+            this.methods.nextPage(this.data.nextPage);
           }
         }
       },
@@ -1672,6 +1743,7 @@ window.addEventListener("load", () => {
               { text: 'Play All' },
               { text: 'Add/Remove from Playlist' },
               { text: 'Update Metadata' },
+              { text: _selected.local_stream ? 'Remove Audio' : 'Download Audio' },
               { text: 'Delete' },
             ]
             this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
@@ -1683,6 +1755,62 @@ window.addEventListener("load", () => {
                 this.methods.deleteAudio(_selected);
               } else if (selected.text === 'Play All') {
                 playDefaultPlaylist();
+              } else if (selected.text === 'Download Audio') {
+                downloadAudio(this.$router, JSON.parse(JSON.stringify(_selected)), this.methods.renderSoftKeyLCR)
+                .then((downloaded) => {
+                  delete downloaded['isAudio'];
+                  if (downloaded['local_stream']) {
+                    T_AUDIO.getItem(downloaded['id'].toString())
+                    .then((cur) => {
+                      if (cur != null) {
+                        cur[['local_stream']] = downloaded['local_stream'];
+                        return T_AUDIO.setItem(downloaded['id'].toString(), cur);
+                      }
+                      return Promise.reject('Audio ID not exist');
+                    })
+                    .then((saved) => {
+                      const DB = this.$state.getState('DATABASE');
+                      DB[saved.id] = saved;
+                      this.$state.setState('DATABASE', DB);
+                    })
+                    .catch((err) => {
+                      console.log(err);
+                    });
+                  }
+                })
+                .finally(() => {
+                  setTimeout(() => {
+                    this.methods.renderSoftKeyLCR();
+                  }, 100);
+                })
+              } else if (selected.text === 'Remove Audio') {
+                const path = _selected['local_stream'].split('/');
+                if (path[0] == '') {
+                  path.splice(0, 1);
+                }
+                const name = path.pop();
+                DS.deleteFile(path, name, true)
+                .then(() => {
+                  T_AUDIO.getItem(_selected['id'].toString())
+                  .then((cur) => {
+                    if (cur != null) {
+                      cur[['local_stream']] = false;
+                      return T_AUDIO.setItem(_selected['id'].toString(), cur);
+                    }
+                    return Promise.reject('Audio ID not exist');
+                  })
+                  .then((saved) => {
+                    const DB = this.$state.getState('DATABASE');
+                    DB[saved.id] = saved;
+                    this.$state.setState('DATABASE', DB);
+                  })
+                  .catch((err) => {
+                    console.log(err);
+                  });
+                })
+                .catch((err) => {
+                  console.log(err);
+                });
               }
             }, () => {
               setTimeout(() => {
