@@ -2,7 +2,6 @@ localforage.setDriver(localforage.INDEXEDDB);
 const MIME = {"audio/aac":"aac","audio/x-aac":"aac","audio/adpcm":"adp","application/vnd.audiograph":"aep","audio/x-aiff":"aif","audio/amr":"amr","audio/basic":"au","audio/x-caf":"caf","audio/vnd.dra":"dra","audio/vnd.dts":"dts","audio/vnd.dts.hd":"dtshd","audio/vnd.nuera.ecelp4800":"ecelp4800","audio/vnd.nuera.ecelp7470":"ecelp7470","audio/vnd.nuera.ecelp9600":"ecelp9600","audio/vnd.digital-winds":"eol","audio/x-flac":"flac","audio/vnd.lucent.voice":"lvp","audio/x-mpegurl":"m3u","audio/x-m4a":"m4a","audio/midi":"mid","audio/x-matroska":"mka","audio/mpeg":"mp3","audio/mp4":"mp4a","audio/mobile-xmf":"mxmf","audio/ogg":"opus","audio/vnd.ms-playready.media.pya":"pya","audio/x-realaudio":"ra","audio/x-pn-realaudio":"ram","audio/vnd.rip":"rip","audio/x-pn-realaudio-plugin":"rmp","audio/s3m":"s3m","application/vnd.yamaha.smaf-audio":"saf","audio/silk":"sil","audio/vnd.dece.audio":"uva","audio/x-wav":"wav","audio/x-ms-wax":"wax","audio/webm":"weba","audio/x-ms-wma":"wma","audio/xm":"xm"};
 
 const CACHED_DECRYPTOR = {};
-const OLD_PLAYING = 'YT_PLAYING';
 
 const DEFAULT_VOLUME = 0.02;
 const SDCARD = navigator.getDeviceStorage('sdcard');
@@ -378,7 +377,7 @@ window.addEventListener("load", () => {
         SHUFFLE = false;
       state.setState('SHUFFLE', SHUFFLE);
       localforage.setItem('SHUFFLE', SHUFFLE);
-      localforage.getItem(OLD_PLAYING)
+      localforage.getItem(DB_PLAYLIST)
       .then((playlist_id) => {
         if (playlist_id == null) {
           playDefaultPlaylist();
@@ -453,7 +452,7 @@ window.addEventListener("load", () => {
   function playDefaultPlaylist() {
     TRACKLIST = [];
     TRACKLIST_DEFAULT_SORT = [];
-    localforage.removeItem(OLD_PLAYING);
+    localforage.removeItem(DB_PLAYLIST);
     state.setState('TRACKLIST_IDX', 0);
     TRACK_NAME = 'YT MUSIC';
     const tracks = state.getState('DATABASE');
@@ -489,7 +488,7 @@ window.addEventListener("load", () => {
       shuffling();
       playMainAudio(state.getState('TRACKLIST_IDX'));
       router.showToast(`PLAYING ${TRACK_NAME}`);
-      localforage.setItem(OLD_PLAYING, playlist.id);
+      localforage.setItem(DB_PLAYLIST, playlist.id);
     })
     .catch((e) => {
       router.showToast(e.toString());
