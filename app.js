@@ -2017,6 +2017,7 @@ window.addEventListener("load", () => {
     name: 'home',
     data: {
       title: 'YT Music',
+      duration: 0,
     },
     templateUrl: document.location.origin + '/templates/home.html',
     mounted: function() {
@@ -2041,6 +2042,9 @@ window.addEventListener("load", () => {
       MAIN_PLAYER.addEventListener('ended', this.methods.onended);
       MAIN_PLAYER.addEventListener('error', this.methods.onerror);
       document.addEventListener('keydown', this.methods.onKeydown);
+
+      MAIN_DURATION.innerHTML = convertTime(this.data.duration);
+      MAIN_DURATION_SLIDER.setAttribute("max", this.data.duration);
 
       this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
       this.methods.listenTrackChange(this.$state.getState('TRACKLIST_IDX'));
@@ -2094,15 +2098,17 @@ window.addEventListener("load", () => {
         }
       },
       onloadedmetadata: function(evt) {
+        this.data.duration = evt.target.duration;
         MAIN_BUFFERING.style.visibility = 'hidden';
         MAIN_DURATION.innerHTML = convertTime(evt.target.duration);
         MAIN_DURATION_SLIDER.setAttribute("max", evt.target.duration);
+        console.log('onloadedmetadata', evt.target.duration);
       },
       ontimeupdate: function(evt) {
         MAIN_CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-        MAIN_DURATION.innerHTML = convertTime(evt.target.duration);
         MAIN_DURATION_SLIDER.value = evt.target.currentTime;
-        MAIN_DURATION_SLIDER.setAttribute("max", evt.target.duration);
+        MAIN_DURATION.innerHTML = convertTime(this.data.duration || evt.target.duration);
+        MAIN_DURATION_SLIDER.setAttribute("max", this.data.duration || evt.target.duration);
         MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
       },
       onpause: function() {
