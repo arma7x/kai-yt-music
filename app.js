@@ -4,6 +4,7 @@ const MIME = {"audio/aac":"aac","audio/x-aac":"aac","audio/adpcm":"adp","applica
 var BOOT = false;
 var SLEEP_TIMER = null;
 var WAKE_LOCK = null;
+var QR_READER = null;
 const CACHED_DECRYPTOR = {};
 const DEFAULT_VOLUME = 0.02;
 
@@ -549,6 +550,57 @@ window.addEventListener("load", () => {
     .catch((e) => {
       return Promise.reject(e);
     });
+  }
+
+  const qrReader = function($router, cb = () => {}) {
+    $router.showBottomSheet(
+      new Kai({
+        name: 'qrReader',
+        data: {
+          title: 'qrReader'
+        },
+        template: `<div class="kui-flex-wrap" style="overflow:hidden!important;height:264px;"><video id="qr_video" height="320" width="240" autoplay></video></div>`,
+        mounted: function() {
+          navigator.mediaDevices.getUserMedia({ audio: false, video: true })
+          .then((stream) => {
+            const video = document.getElementById("qr_video");
+            video.srcObject = stream;
+            video.onloadedmetadata = (e) => {
+              video.play();
+              var barcodeCanvas = document.createElement("canvas");
+              QR_READER = setInterval(() => {
+                barcodeCanvas.width = video.videoWidth;
+                barcodeCanvas.height = video.videoHeight;
+                var barcodeContext = barcodeCanvas.getContext("2d");
+                var imageWidth = Math.max(1, Math.floor(video.videoWidth)),imageHeight = Math.max(1, Math.floor(video.videoHeight));
+                barcodeContext.drawImage(video, 0, 0, imageWidth, imageHeight);
+                var imageData = barcodeContext.getImageData(0, 0, imageWidth, imageHeight);
+                var idd = imageData.data;
+                let code = jsQR(idd, imageWidth, imageHeight);
+                if (code) {
+                  cb(code.data);
+                }
+              }, 1000);
+            };
+          }).catch((err) => {
+            $router.showToast(err.toString());
+          });
+        },
+        unmounted: function() {
+          if (QR_READER) {
+            clearInterval(QR_READER);
+            QR_READER = null;
+          }
+          const video = document.getElementById("qr_video");
+          const stream = video.srcObject;
+          const tracks = stream.getTracks();
+          tracks.forEach(function (track) {
+            track.stop();
+          });
+          video.srcObject = null;
+        },
+      })
+    );
   }
 
   function downloadAudio($router, audio, cb = () => {}) {
@@ -1101,11 +1153,14 @@ window.addEventListener("load", () => {
       right: function() {
         const _selected = this.data.playlists[this.verticalNavIndex];
         if (_selected) {
-          const menus = [
+          var menus = [
             { text: 'Tracklist' },
             { text: 'Update' },
             { text: 'Delete' },
           ]
+          if (_selected.sync) {
+            menus = [{ text: 'Sync' }, ...menus];
+          }
           this.$router.showOptionMenu('Action', menus, 'Select', (selected) => {
             if (selected.text === 'Tracklist') {
               const DB = this.$state.getState('DATABASE');
@@ -1169,6 +1224,9 @@ window.addEventListener("load", () => {
                   }, 100);
                 });
               }
+            } else if (selected.text === 'Sync') {
+              // exclude current collections
+              console.log('SYNC', _selected);
             }
           }, () => {
             setTimeout(() => {
@@ -2009,6 +2067,9 @@ window.addEventListener("load", () => {
         }
       });
 
+      if (TRACKLIST.length === 0)
+        MAIN_BUFFERING.style.visibility = 'hidden';
+
       this.methods.togglePlayIcon();
     },
     unmounted: function() {
@@ -2138,6 +2199,90 @@ window.addEventListener("load", () => {
             s.className = style.classList;
             break;
         }
+      },
+      importPlaylist: function (playlistId) {
+        // const playlistId = 'PLLsua0MU5Y8LkBQmQWsjYPiLraLx7MXzl';
+        const DB = this.$state.getState('DATABASE');
+        const PLAYLIST = this.$state.getState('PLAYLIST');
+        if (PLAYLIST[playlistId] != null) {
+          this.$router.showToast(`Please sync ${PLAYLIST[playlistId].name}`);
+          return;
+        }
+        this.$router.showLoading();
+        getPlaylistVideos(playlistId)
+        .then((result) => {
+          setTimeout(() => {
+            result.forEach((v) => {
+              v.checked = true;
+              v.text = v.title;
+            });
+            this.$router.showMultiSelector(`Import Playlist(${result.length})`, result, 'Select', null, 'Save', (list) => {
+              const playlist = { id: playlistId, name: playlistId, sync: playlistId, collections: [] };
+              const audio = {};
+              list.forEach((i) => {
+                if (i.checked && DB[i.id] == null) {
+                  playlist.collections.push(i.id);
+                  audio[i.id] = {
+                    id: i.id,
+                    audio_title: i.title,
+                    duration: false,
+                    title: false,
+                    artist: false,
+                    album: false,
+                    genre: false,
+                    year: false,
+                    track: false,
+                    local_stream: false,
+                  }
+                } else if (DB[i.id]) {
+                  playlist.collections.push(i.id);
+                }
+              });
+              var success = 0;
+              var done = Object.keys(audio).length;
+              for (var x in audio) {
+                T_AUDIO.setItem(x, audio[x])
+                .then((savedAudio) => {
+                  success++;
+                  done--;
+                  if (done === 0) {
+                    if (success === Object.keys(audio).length) {
+                      T_PLAYLIST.setItem(playlistId.toString(), playlist)
+                      .then((savedPlaylist) => {
+                        PLAYLIST[playlistId] = savedPlaylist;
+                        Object.assign(DB, audio);
+                        this.$state.setState('PLAYLIST', PLAYLIST);
+                        this.$state.setState('DATABASE', DB);
+                        console.log('0 PLAYLIST SUCCESS:', playlistId, success);
+                        this.$router.showToast('Success');
+                      });
+                    } else {
+                      console.log('1 PLAYLIST FAIL:', playlistId, success);
+                    }
+                  }
+                })
+                .catch((err) => {
+                  console.log(err);
+                  done--;
+                  if (done === 0) {
+                    console.log('2 PLAYLIST FAIL:', playlistId, success);
+                  }
+                });
+              }
+            }, 'Cancel', null, () => {}, 0);
+          }, 100);
+        })
+        .catch((err) => {
+          console.log(err);
+          if (typeof err === 'string') {
+            this.$router.showToast(err);
+          } else {
+            this.$router.showToast('Network Error');
+          }
+        })
+        .finally(() => {
+          this.$router.hideLoading();
+        });
       }
     },
     softKeyText: { left: 'Tracklist', center: '', right: 'Menu' },
@@ -2149,6 +2294,8 @@ window.addEventListener("load", () => {
           t.idx = i;
           tracklist.push(t);
         });
+        if (tracklist.length === 0)
+          return;
         this.$router.showOptionMenu(TRACK_NAME, tracklist, 'Select', (selected) => {
           if (TRACKLIST[selected.idx]) {
             this.$state.setState('TRACKLIST_IDX', selected.idx);
@@ -2168,6 +2315,7 @@ window.addEventListener("load", () => {
           { text: 'Search' },
           { text: 'Local Database' },
           { text: 'Playlist' },
+          { text: 'Import Youtube Playlist' },
           { text: 'Preferred Mime' },
           { text: 'Clear Caches' },
           { text: 'Settings' },
@@ -2205,6 +2353,23 @@ window.addEventListener("load", () => {
             });
           } else if (selected.text === 'Settings') {
             this.$router.push('settings');
+          } else if (selected.text === 'Import Youtube Playlist') {
+            if (navigator.mediaDevices) {
+              navigator.mediaDevices.getUserMedia({ audio: false, video: true })
+              .then(() => {
+                qrReader(this.$router, (playlistId) => {
+                  if (playlistId !== null) {
+                    this.methods.importPlaylist(playlistId);
+                  }
+                });
+              })
+              .catch((err) => {
+                console.log(err);
+                this.$router.showToast('Please grant the permission for camera/video');
+              });
+            } else {
+              this.$router.showToast('No mediaDevices');
+            }
           } else if (selected.text === 'Exit') {
             window.close();
           }

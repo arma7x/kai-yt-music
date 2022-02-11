@@ -1,7 +1,7 @@
 {
-  "version": "1.1.0",
+  "version": "2.0.0",
   "name": "YT Music",
-  "description": "YT Music Player",
+  "description": "YT Music client",
   "launch_path": "/index.html",
   "theme": "#FF0000",
   "theme_color": "#FF0000",
@@ -21,32 +21,34 @@
   "origin": "app://ytm.arma7x.com",
   "type": "certified",
   "permissions": {
-    "serviceworker": {
-      "description": "Needed for assocating service worker"
-    },
-    "browser": {
-      "description": "Required for iframe"
-    },
     "device-storage:sdcard":{
-      "access": "readwrite"
+      "access": "readwrite",
+      "description": "Store audio files on device storage"
     },
     "systemXHR": {
       "description": "Required to load remote content"
     },
     "audio-channel-normal": {
-      "description" : "Needed to play this app's audio content on the normal channel"
+      "description" : "To play audio in normal channel"
     },
     "audio-channel-content": {
-      "description": "To play audio in background"
+      "description": "To play audio in background channel"
     },
-    "volumemanager": {},
-    "tcp-socket": {}
+    "volumemanager": {
+      "description": "To control volume manager"
+    },
+    "serviceworker": {
+      "description": "Needed for assocating service worker"
+    },
+    "video-capture": {
+      "description": "Required for qr-code reader(playlist id qr-code)"
+    }
   },
   "locales": {
     "en-US": {
       "name": "YT Music",
-      "subtitle": "YT Music Player",
-      "description": "YT Music Player"
+      "subtitle": "YT Music client",
+      "description": "YT Music client"
     }
   },
   "default_locale": "en-US"
