@@ -2235,12 +2235,26 @@ window.addEventListener("load", () => {
                     track: false,
                     local_stream: false,
                   }
-                } else if (DB[i.id]) {
+                } else if (i.checked && DB[i.id]) {
                   playlist.collections.push(i.id);
                 }
               });
+              if (playlist.collections.length === 0) {
+                this.$router.showToast('At least 1 track');
+                return;
+              }
               var success = 0;
-              var done = Object.keys(audio).length; // TO IF 0
+              var done = Object.keys(audio).length;
+              if (done === 0) {
+                T_PLAYLIST.setItem(playlistId.toString(), playlist)
+                .then((savedPlaylist) => {
+                  PLAYLIST[playlistId] = savedPlaylist;
+                  this.$state.setState('PLAYLIST', PLAYLIST);
+                  console.log('1 PLAYLIST SUCCESS:', playlistId, success);
+                  this.$router.showToast('Success');
+                });
+                return;
+              }
               for (var x in audio) {
                 T_AUDIO.setItem(x, audio[x])
                 .then((savedAudio) => {
@@ -2254,7 +2268,7 @@ window.addEventListener("load", () => {
                         Object.assign(DB, audio);
                         this.$state.setState('PLAYLIST', PLAYLIST);
                         this.$state.setState('DATABASE', DB);
-                        console.log('0 PLAYLIST SUCCESS:', playlistId, success);
+                        console.log('2 PLAYLIST SUCCESS:', playlistId, success);
                         this.$router.showToast('Success');
                       });
                     } else {
