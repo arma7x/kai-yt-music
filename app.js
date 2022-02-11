@@ -2201,6 +2201,7 @@ window.addEventListener("load", () => {
         }
       },
       importPlaylist: function (playlistId) {
+        this.$router.hideBottomSheet();
         // const playlistId = 'PLLsua0MU5Y8LkBQmQWsjYPiLraLx7MXzl';
         const DB = this.$state.getState('DATABASE');
         const PLAYLIST = this.$state.getState('PLAYLIST');
@@ -2239,7 +2240,7 @@ window.addEventListener("load", () => {
                 }
               });
               var success = 0;
-              var done = Object.keys(audio).length;
+              var done = Object.keys(audio).length; // TO IF 0
               for (var x in audio) {
                 T_AUDIO.setItem(x, audio[x])
                 .then((savedAudio) => {
