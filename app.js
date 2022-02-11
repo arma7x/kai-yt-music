@@ -868,17 +868,17 @@ window.addEventListener("load", () => {
     );
   }
 
-  const setting = new Kai({
-    name: 'setting',
+  const settings = new Kai({
+    name: 'settings',
     data: {
-      title: 'setting',
+      title: 'settings',
       autoplay: false,
       autosleep: false,
       apikey: false,
       apisecret: false,
     },
     verticalNavClass: '.settingNav',
-    templateUrl: document.location.origin + '/templates/setting.html',
+    templateUrl: document.location.origin + '/templates/settings.html',
     mounted: function() {
       this.$router.setHeaderTitle('Settings');
       this.methods.listenState(this.$state.getState());
@@ -2204,7 +2204,7 @@ window.addEventListener("load", () => {
               this.$router.showToast('DONE');
             });
           } else if (selected.text === 'Settings') {
-            this.$router.push('setting');
+            this.$router.push('settings');
           } else if (selected.text === 'Exit') {
             window.close();
           }
@@ -2259,9 +2259,9 @@ window.addEventListener("load", () => {
         name: 'playlist',
         component: playlist
       },
-      'setting': {
-        name: 'setting',
-        component: setting
+      'settings': {
+        name: 'settings',
+        component: settings
       },
     }
   });

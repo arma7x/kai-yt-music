@@ -283,3 +283,22 @@ function getVideoLinks(id) {
     return Promise.reject(err)
   })
 }
+
+function getPlaylistVideos(id) {
+  return new Promise((resolve, reject) => {
+    xhr('GET', 'https://malaysiaapi.herokuapp.com/youtube/api/playlist', {}, {id:id})
+    .then((result) => {
+      const videos = result.response;
+      if (videos.length > 0) {
+        videos.sort((a, b) => {
+          return new Date(a['publishedAt']).getTime() - new Date(b['publishedAt']).getTime();
+        });
+        resolve(videos);
+      } else
+        reject('Empty');
+    })
+    .catch((err) => {
+      reject(err);
+    });
+  });
+}
