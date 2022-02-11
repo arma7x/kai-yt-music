@@ -2102,7 +2102,7 @@ window.addEventListener("load", () => {
         MAIN_BUFFERING.style.visibility = 'hidden';
         MAIN_DURATION.innerHTML = convertTime(evt.target.duration);
         MAIN_DURATION_SLIDER.setAttribute("max", evt.target.duration);
-        console.log('onloadedmetadata', evt.target.duration);
+        // console.log('onloadedmetadata', evt.target.duration);
       },
       ontimeupdate: function(evt) {
         MAIN_CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
@@ -2110,6 +2110,7 @@ window.addEventListener("load", () => {
         MAIN_DURATION.innerHTML = convertTime(this.data.duration || evt.target.duration);
         MAIN_DURATION_SLIDER.setAttribute("max", this.data.duration || evt.target.duration);
         MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
+        // console.log('ontimeupdate', evt.target.duration); // weird ¯\_(ツ)_/¯
       },
       onpause: function() {
         MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';
@@ -2131,10 +2132,19 @@ window.addEventListener("load", () => {
       onended: function() {
         MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';
       },
-      onerror: function () {
+      onerror: function (evt) {
+        if (evt.target.error.code === 4) {
+          const idx = this.$state.getState('TRACKLIST_IDX');
+          if (TRACKLIST[idx]) {
+            T_CACHED_URL.removeItem(TRACKLIST[idx].id)
+            .finally(() => {
+              playMainAudio(idx);
+            });
+          }
+        }
         MAIN_PLAYER.pause();
         MAIN_PLAY_BTN.src = '/icons/play.png';
-        this.$router.showToast('Error');
+        this.$router.showToast('Error & Retry');
       },
       listenTrackChange: function(val) {
         const T = TRACKLIST[val];
