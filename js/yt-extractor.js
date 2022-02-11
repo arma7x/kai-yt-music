@@ -1,5 +1,6 @@
 const XHR_HEADER = {
-  'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
+  'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
+  'x-wap-profile': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
 }
 
 var xhr = function(method, url, data={}, query={}, headers={}) {
@@ -147,7 +148,7 @@ function decryptSignature(signatureCipher, player) {
 }
 
 function fallback(id) {
-  return xhr('GET', `https://www.youtube.com/watch?v=${id}`, {}, {}, XHR_HEADER)
+  return xhr('GET', `https://www.youtube.com/watch?app=desktop&v=${id}`, {}, {}, XHR_HEADER)
   .then((res) => {
     const start = res.response.search('dashManifestUrl');
     if (start > -1) {
