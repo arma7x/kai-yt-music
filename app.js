@@ -1,6 +1,9 @@
 localforage.setDriver(localforage.INDEXEDDB);
 const MIME = {"audio/aac":"aac","audio/x-aac":"aac","audio/adpcm":"adp","application/vnd.audiograph":"aep","audio/x-aiff":"aif","audio/amr":"amr","audio/basic":"au","audio/x-caf":"caf","audio/vnd.dra":"dra","audio/vnd.dts":"dts","audio/vnd.dts.hd":"dtshd","audio/vnd.nuera.ecelp4800":"ecelp4800","audio/vnd.nuera.ecelp7470":"ecelp7470","audio/vnd.nuera.ecelp9600":"ecelp9600","audio/vnd.digital-winds":"eol","audio/x-flac":"flac","audio/vnd.lucent.voice":"lvp","audio/x-mpegurl":"m3u","audio/x-m4a":"m4a","audio/midi":"mid","audio/x-matroska":"mka","audio/mpeg":"mp3","audio/mp4":"mp4a","audio/mobile-xmf":"mxmf","audio/ogg":"opus","audio/vnd.ms-playready.media.pya":"pya","audio/x-realaudio":"ra","audio/x-pn-realaudio":"ram","audio/vnd.rip":"rip","audio/x-pn-realaudio-plugin":"rmp","audio/s3m":"s3m","application/vnd.yamaha.smaf-audio":"saf","audio/silk":"sil","audio/vnd.dece.audio":"uva","audio/x-wav":"wav","audio/x-ms-wax":"wax","audio/webm":"weba","audio/x-ms-wma":"wma","audio/xm":"xm"};
 
+var BOOT = false;
+var SLEEP_TIMER = null;
+var WAKE_LOCK = null;
 const CACHED_DECRYPTOR = {};
 const DEFAULT_VOLUME = 0.02;
 
@@ -257,6 +260,8 @@ window.addEventListener("load", () => {
     TRACKLIST_IDX: 0,
     REPEAT: -1,
     SHUFFLE: false,
+    AUTOPLAY: JSON.parse(localStorage.getItem('AUTOPLAY')) || false,
+    AUTOSLEEP: JSON.parse(localStorage.getItem('AUTOSLEEP')) || false,
   });
 
   const MAIN_PLAYER = document.createElement("audio");
@@ -669,7 +674,11 @@ window.addEventListener("load", () => {
       // console.log(url);
       MAIN_PLAYER.mozAudioChannelType = 'content';
       MAIN_PLAYER.src = url;
-      MAIN_PLAYER.play();
+      if (state.getState('AUTOPLAY') && BOOT == false)
+        MAIN_PLAYER.play(); // TODO
+      else if (BOOT)
+        MAIN_PLAYER.play();
+      BOOT = true;
     })
     .catch((err) => {
       console.log(err);
@@ -678,7 +687,11 @@ window.addEventListener("load", () => {
         // console.log(url);
         MAIN_PLAYER.mozAudioChannelType = 'content';
         MAIN_PLAYER.src = url;
-        MAIN_PLAYER.play();
+        if (state.getState('AUTOPLAY') && BOOT == false)
+          MAIN_PLAYER.play(); // TODO
+        else if (BOOT)
+          MAIN_PLAYER.play();
+        BOOT = true;
       })
       .catch((err) => {
         console.log(err);
@@ -696,7 +709,11 @@ window.addEventListener("load", () => {
       .then((file) => {
         MAIN_PLAYER.mozAudioChannelType = 'content';
         MAIN_PLAYER.src = window.URL.createObjectURL(file);
-        MAIN_PLAYER.play();
+        if (state.getState('AUTOPLAY') && BOOT == false)
+          MAIN_PLAYER.play(); // TODO
+        else if (BOOT)
+          MAIN_PLAYER.play();
+        BOOT = true;
       })
       .catch((err) => {
         playMainAudioFallback(TRACKLIST[idx]);
@@ -850,6 +867,97 @@ window.addEventListener("load", () => {
       })
     );
   }
+
+  const setting = new Kai({
+    name: 'setting',
+    data: {
+      title: 'setting',
+      autoplay: false,
+      autosleep: false,
+      apikey: false,
+      apisecret: false,
+    },
+    verticalNavClass: '.settingNav',
+    templateUrl: document.location.origin + '/templates/setting.html',
+    mounted: function() {
+      this.$router.setHeaderTitle('Settings');
+      this.methods.listenState(this.$state.getState());
+      this.$state.addGlobalListener(this.methods.listenState);
+      this.methods.renderSoftKeyText();
+    },
+    unmounted: function() {
+      this.$state.removeGlobalListener(this.methods.listenState);
+    },
+    methods: {
+      listenState: function(data) {
+        const obj = {};
+        if (data['AUTOSLEEP'] != null) {
+          obj['autosleep'] = JSON.parse(data['AUTOSLEEP']);
+        }
+        if (data['AUTOPLAY'] != null) {
+          obj['autoplay'] = JSON.parse(data['AUTOPLAY']);
+        }
+        this.setData(obj);
+      },
+      changeAutoSleep: function() {
+        const choices = [
+          { 'text': 'Off', value: false },
+          { 'text': '1 Minutes(TEST)', value: 1 },
+          { 'text': '10 Minutes', value: 10 },
+          { 'text': '20 Minutes', value: 20 },
+          { 'text': '30 Minutes', value: 30 },
+          { 'text': '40 Minutes', value: 40 },
+          { 'text': '50 Minutes', value: 50 },
+          { 'text': '60 Minutes', value: 60 },
+        ]
+        const idx = choices.findIndex((opt) => {
+          return opt.value === this.data.autosleep;
+        });
+        this.$router.showOptionMenu('Sleep Timer', choices, 'SELECT', (selected) => {
+          const value = JSON.parse(selected.value);
+          localStorage.setItem('AUTOSLEEP', value);
+          this.$state.setState('AUTOSLEEP', JSON.parse(localStorage.getItem('AUTOSLEEP')));
+        }, this.methods.renderSoftKeyText, idx);
+      },
+      changeAutoPlay: function() {
+        const value = !this.data.autoplay;
+        localStorage.setItem('AUTOPLAY', value);
+        this.$state.setState('AUTOPLAY', JSON.parse(localStorage.getItem('AUTOPLAY')));
+      },
+      renderSoftKeyText: function() {
+        setTimeout(() => {
+          if (this.verticalNavIndex == 2) {
+            this.$router.setSoftKeyText('Clear', 'SET', 'Show');
+          } else if (this.verticalNavIndex == 3) {
+            this.$router.setSoftKeyText('Clear', 'SET', 'Show');
+          } else {
+            this.$router.setSoftKeyText('', 'SELECT', '');
+          }
+        }, 100);
+      }
+    },
+    softKeyText: { left: '', center: 'SELECT', right: '' },
+    softKeyListener: {
+      left: function() {},
+      center: function() {
+        const listNav = document.querySelectorAll(this.verticalNavClass);
+        if (this.verticalNavIndex > -1) {
+          listNav[this.verticalNavIndex].click();
+        }
+      },
+      right: function() {}
+    },
+    dPadNavListener: {
+      arrowUp: function() {
+        this.navigateListNav(-1);
+        this.methods.renderSoftKeyText();
+      },
+      arrowDown: function() {
+        this.navigateListNav(1);
+        this.methods.renderSoftKeyText();
+      }
+    }
+  });
 
   const playlistEditor = function(scope, name = '', id = null) {
     const playlistDialog = Kai.createDialog((id ? 'Edit' : 'Add') + ' Playlist', `<div><input id="playlist-name" placeholder="Enter playlist name" class="kui-input" type="text" value=""/></div>`, null, '', undefined, '', undefined, '', undefined, undefined, scope.$router);
@@ -2062,6 +2170,7 @@ window.addEventListener("load", () => {
           { text: 'Playlist' },
           { text: 'Preferred Mime' },
           { text: 'Clear Caches' },
+          { text: 'Settings' },
           { text: 'Exit' }
         ]
         this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
@@ -2094,6 +2203,8 @@ window.addEventListener("load", () => {
             .finally(() => {
               this.$router.showToast('DONE');
             });
+          } else if (selected.text === 'Settings') {
+            this.$router.push('setting');
           } else if (selected.text === 'Exit') {
             window.close();
           }
@@ -2147,7 +2258,11 @@ window.addEventListener("load", () => {
       'playlist': {
         name: 'playlist',
         component: playlist
-      }
+      },
+      'setting': {
+        name: 'setting',
+        component: setting
+      },
     }
   });
 
@@ -2166,6 +2281,21 @@ window.addEventListener("load", () => {
   } catch(err) {
     console.log(err);
   }
+
+  document.addEventListener('visibilitychange', (evt) => {
+    if (document.visibilityState === 'visible') {
+      if (SLEEP_TIMER != null) {
+        clearTimeout(SLEEP_TIMER);
+        SLEEP_TIMER = null;
+      }
+    } else {
+      if (state.getState('AUTOSLEEP') !== false && typeof state.getState('AUTOSLEEP') === 'number' && WAKE_LOCK == null) {
+        SLEEP_TIMER = setTimeout(() => {
+          window.close();
+        }, state.getState('AUTOSLEEP') * 60 * 1000);
+      }
+    }
+  });
 });
 
 if ('serviceWorker' in navigator) {

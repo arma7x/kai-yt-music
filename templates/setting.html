@@ -1,0 +1,28 @@
+<div class="kui-flex-wrap">
+  <style>
+    .badge-setting {
+      padding:3px 5px;
+      background-color:#fff;
+      color:#000;
+      border-radius:5px;
+    }
+  </style>
+  <ul class="kui-list kai-container">
+    <li class="settingNav kui-divider" @click="changeAutoSleep()">
+      <div class="kui-row-center" style="justify-content:space-between;">
+        <span>Sleep Timer</span>
+        <span class="badge-setting">
+          {{#autosleep}}{{autosleep}} Minutes{{/autosleep}}{{^autosleep}}OFF{{/autosleep}}
+        </span>
+      </div>
+    </li>
+    <li class="settingNav kui-divider" @click="changeAutoPlay()">
+      <div class="kui-row-center" style="justify-content:space-between;">
+        <span>Autoplay</span>
+        <span class="badge-setting">
+          {{#autoplay}}ON{{/autoplay}}{{^autoplay}}OFF{{/autoplay}}
+        </span>
+      </div>
+    </li>
+  </ul>
+</div>
