@@ -35,7 +35,7 @@ var MAIN_DURATION;
 var MAIN_THUMB;
 var MAIN_TITLE;
 var MAIN_PLAY_BTN;
-var MAIN_THUMB_BUFF;
+var MAIN_BUFFERING;
 
 var LFT_DBL_CLICK_TH = 0;
 var LFT_DBL_CLICK_TIMER = undefined;
@@ -298,7 +298,7 @@ window.addEventListener("load", () => {
         $router.showToast('Shuffle Off');
     }
     state.setState('SHUFFLE', SHUFFLE);
-    localforage.setItem('SHUFFLE', SHUFFLE);
+    T_CONFIGURATION.setItem('SHUFFLE', SHUFFLE);
     shuffling();
     return SHUFFLE_BTN;
   }
@@ -355,18 +355,18 @@ window.addEventListener("load", () => {
         $router.showToast('Repeat Off');
     }
     state.setState('REPEAT', REPEAT);
-    localforage.setItem('REPEAT', REPEAT);
+    T_CONFIGURATION.setItem('REPEAT', REPEAT);
     return REPEAT_BTN;
   }
 
   function init(from = null) {
     console.log('INIT_APP:', from);
-    localforage.getItem('SHUFFLE')
+    T_CONFIGURATION.getItem('SHUFFLE')
     .then((SHUFFLE) => {
       if (SHUFFLE == null)
         SHUFFLE = false;
       state.setState('SHUFFLE', SHUFFLE);
-      localforage.setItem('SHUFFLE', SHUFFLE);
+      T_CONFIGURATION.setItem('SHUFFLE', SHUFFLE);
       localforage.getItem(DB_PLAYLIST)
       .then((playlist_id) => {
         if (playlist_id == null) {
@@ -380,13 +380,25 @@ window.addEventListener("load", () => {
 
   T_CONFIGURATION.keys()
   .then((keys) => {
+    const kv = {}
+    var done = keys.length;
     keys.forEach((key) => {
       T_CONFIGURATION.getItem(key)
       .then((value) => {
-        const list = state.getState('CONFIGURATION');
-        list[key] = value;
-        state.setState('CONFIGURATION', list);
-        console.log(state.getState('CONFIGURATION'));
+        kv[key] = value;
+        done--;
+        if (done <= 0 ) {
+          state.setState('CONFIGURATION', kv);
+          console.log(state.getState('CONFIGURATION'));
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        done--;
+        if (done <= 0 ) {
+          state.setState('CONFIGURATION', kv);
+          console.log(state.getState('CONFIGURATION'));
+        }
       });
     });
   }).catch((err) => {
@@ -1850,7 +1862,7 @@ window.addEventListener("load", () => {
       MAIN_THUMB = document.getElementById('main_thumb');
       MAIN_TITLE = document.getElementById('main_title');
       MAIN_PLAY_BTN = document.getElementById('main_play_btn');
-      MAIN_THUMB_BUFF = document.getElementById('thumb_buffering');
+      MAIN_BUFFERING = document.getElementById('thumb_buffering');
       MAIN_CURRENT_TIME.innerHTML = convertTime(MAIN_PLAYER.currentTime);
 
       MAIN_PLAYER.addEventListener('loadedmetadata', this.methods.onloadedmetadata);
@@ -1867,24 +1879,29 @@ window.addEventListener("load", () => {
       this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
       this.methods.listenTrackChange(this.$state.getState('TRACKLIST_IDX'));
 
-      this.methods.togglePlayIcon();
-
-      localforage.getItem('REPEAT')
+      T_CONFIGURATION.getItem('REPEAT')
       .then((val) => {
         if (val != null) {
           var REPEAT = val - 1;
           this.$state.setState('REPEAT', REPEAT);
           var style = toggleRepeat();
-          //this.setData({ repeat_class: style.classList, repeat_icon: style.src });
+          const r = document.getElementById('main_repeat');
+          r.className = style.classList;
+          r.src = style.src;
         }
       });
 
-      const SHUFFLE = this.$state.getState('SHUFFLE');
-      if (SHUFFLE) {
-        //this.setData({ shuffle_class: '' });
-      } else {
-        //this.setData({ shuffle_class: 'inactive' });
-      }
+      T_CONFIGURATION.getItem('SHUFFLE')
+      .then((val) => {
+        const s = document.getElementById('main_shuffle');
+        if (val != null && val) {
+          s.className = '';
+        } else {
+          s.className = 'inactive';
+        }
+      });
+
+      this.methods.togglePlayIcon();
     },
     unmounted: function() {
       this.$state.removeStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
@@ -1908,7 +1925,7 @@ window.addEventListener("load", () => {
         }
       },
       onloadedmetadata: function(evt) {
-        MAIN_THUMB_BUFF.style.visibility = 'hidden';
+        MAIN_BUFFERING.style.visibility = 'hidden';
         MAIN_DURATION.innerHTML = convertTime(evt.target.duration);
         MAIN_DURATION_SLIDER.setAttribute("max", evt.target.duration);
       },
@@ -1926,12 +1943,12 @@ window.addEventListener("load", () => {
         MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
       },
       onseeking: function(evt) {
-        MAIN_THUMB_BUFF.style.visibility = 'visible';
+        MAIN_BUFFERING.style.visibility = 'visible';
         MAIN_CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
         MAIN_DURATION_SLIDER.value = evt.target.currentTime;
       },
       onseeked: function(evt) {
-        MAIN_THUMB_BUFF.style.visibility = 'hidden';
+        MAIN_BUFFERING.style.visibility = 'hidden';
       },
       onratechange: function() {
         this.$router.setSoftKeyCenterText(`${MAIN_PLAYER.playbackRate}x`);
@@ -1947,13 +1964,13 @@ window.addEventListener("load", () => {
       listenTrackChange: function(val) {
         const T = TRACKLIST[val];
         if (T) {
-          MAIN_THUMB_BUFF.style.visibility = 'hidden';
+          MAIN_BUFFERING.style.visibility = 'hidden';
           MAIN_TITLE.innerHTML = T.title || T.audio_title;
-          MAIN_THUMB.src = `https://i.ytimg.com/vi/${T.id}/hqdefault.jpg`;
-          document.getElementById('home_artist').innerHTML = T.artist || 'UNKNOWN';
-          document.getElementById('home_album').innerHTML = T.album || 'UNKNOWN';
-          document.getElementById('home_genre').innerHTML = T.genre || 'UNKNOWN';
-          document.getElementById('home_list').innerHTML = `${(val + 1).toString()}/${TRACKLIST.length.toString()}`;
+          MAIN_THUMB.style.backgroundImage = `url('https://i.ytimg.com/vi/${T.id}/hqdefault.jpg')`;
+          document.getElementById('main_artist').innerHTML = T.artist || 'UNKNOWN';
+          document.getElementById('main_album').innerHTML = T.album || 'UNKNOWN';
+          document.getElementById('main_genre').innerHTML = T.genre || 'UNKNOWN';
+          document.getElementById('main_list').innerHTML = `${(val + 1).toString()}/${TRACKLIST.length.toString()}`;
         }
       },
       onKeydown: function (evt) {
@@ -2003,11 +2020,14 @@ window.addEventListener("load", () => {
             break;
           case '*':
             var style = toggleRepeat(this.$router);
-            // this.setData({ repeat_class: style.classList, repeat_icon: style.src });
+            const r = document.getElementById('main_repeat');
+            r.className = style.classList;
+            r.src = style.src;
             break;
           case '#':
             var style = toggleShuffle(this.$router);
-            // this.setData({ shuffle_class: style.classList });
+            const s = document.getElementById('main_shuffle');
+            s.className = style.classList;
             break;
         }
       }
