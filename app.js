@@ -255,6 +255,7 @@ window.addEventListener("load", () => {
   var TRACKLIST_DEFAULT_SORT = [];
 
   const state = new KaiState({
+    MAIN_PLAYER_DURATION: 0,
     CONFIGURATION: {},
     DATABASE: {},
     PLAYLIST: {},
@@ -268,6 +269,10 @@ window.addEventListener("load", () => {
   const MAIN_PLAYER = document.createElement("audio");
   MAIN_PLAYER.volume = 1;
   MAIN_PLAYER.mozAudioChannelType = 'content';
+
+  MAIN_PLAYER.onloadedmetadata = (e) => {
+    state.setState('MAIN_PLAYER_DURATION', e.target.duration);
+  }
 
   MAIN_PLAYER.onended = (e) => {
     const REPEAT = state.getState('REPEAT');
@@ -2042,10 +2047,8 @@ window.addEventListener("load", () => {
       MAIN_PLAYER.addEventListener('error', this.methods.onerror);
       document.addEventListener('keydown', this.methods.onKeydown);
 
-      if (!isNaN(MAIN_PLAYER.duration)) {
-        MAIN_DURATION.innerHTML = convertTime(MAIN_PLAYER.duration);
-        MAIN_DURATION_SLIDER.setAttribute("max", MAIN_PLAYER.duration);
-      }
+      MAIN_DURATION.innerHTML = convertTime(this.$state.getState('MAIN_PLAYER_DURATION'));
+      MAIN_DURATION_SLIDER.setAttribute("max", this.$state.getState('MAIN_PLAYER_DURATION'));
 
       this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
       this.methods.listenTrackChange(this.$state.getState('TRACKLIST_IDX'));
