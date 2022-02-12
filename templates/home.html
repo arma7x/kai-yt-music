@@ -36,19 +36,26 @@
       -webkit-filter: opacity(.4);
       filter: opacity(.4);
     }
-    input[type="range"]::-moz-range-progress {
-      background-color: #FF0000;
+    .duration-container {
+      position:relative;
+      height:22px;
+      width:95%;
     }
-    input[type="range"]::-moz-range-track {
-      background-color: rgba(192, 192, 192, 1);
+    .duration-bar {
+      position:absolute;
+      top:10px;
+      width:0%;
+      height:4px;
+      border-radius:5px;
     }
-    input[type=range]::-moz-range-thumb {
-      border: 1px solid #c0c0c0;
-      height: 10px;
-      width: 1px;
-      border-radius: 0%;
-      background: #c0c0c0;
-      cursor: pointer;
+    .duration-marker {
+      position:absolute;
+      top:7px;
+      margin-left:0%;
+      background-color:#ffffff;
+      width:10px;
+      height:10px;
+      border-radius:50%;
     }
   </style>
   <div class="kai-container" style="margin:5px;">
@@ -88,9 +95,11 @@
       </div>
     </div>
 
-    <div style="margin-top:5px;position:relative;">
-      <input id="main_duration_slider" style="width:99%;background-color:#000000FF;border-color:#000000FF;" value="0" type="range" min="0" max="100" disabled/>
-      <div id="main_duration_buffered" style="margin-left:1px;height:3px;background-color:rgba(255,0,0,0.5);position:absolute;top:9px;"></div>
+    <div class="duration-container" style="margin-top:5px;">
+      <div                             class="duration-bar" style="background-color:#ffffff;width:105%"></div>
+      <div id="main_duration_elapsed"  class="duration-bar" style="background-color:rgba(255, 0, 0, 1);"></div>
+      <div id="main_duration_buffered" class="duration-bar" style="background-color:rgba(255, 0, 0, 0.5);"></div>
+      <div id="main_duration_slider" class="duration-marker"></div>
     </div>
     <div class="kui-row-center" style="margin-top:5px">
       <div id="main_current_time" style="width:34%;">00:00</div>

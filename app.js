@@ -33,6 +33,7 @@ const T_CONFIGURATION = localforage.createInstance({
   storeName: DB_CONFIGURATION
 });
 
+var MAIN_DURATION_ELAPSED;
 var MAIN_DURATION_SLIDER;
 var MAIN_CURRENT_TIME;
 var MAIN_DURATION;
@@ -268,7 +269,7 @@ window.addEventListener("load", () => {
   });
 
   const MAIN_PLAYER = document.createElement("audio");
-  MAIN_PLAYER.volume = 1;
+  MAIN_PLAYER.volume = navigator.mozAudioChannelManager ? 1 : 0.02;
   MAIN_PLAYER.mozAudioChannelType = 'content';
 
   MAIN_PLAYER.onloadedmetadata = (e) => {
@@ -813,7 +814,7 @@ window.addEventListener("load", () => {
 
     var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION, BUFFERED;
     const MINI_PLAYER = document.createElement("audio");
-    MINI_PLAYER.volume = 1;
+    MINI_PLAYER.volume = navigator.mozAudioChannelManager ? 1 : 0.02;
     MINI_PLAYER.mozAudioChannelType = 'content';
 
     $router.showBottomSheet(
@@ -2064,6 +2065,7 @@ window.addEventListener("load", () => {
     mounted: function() {
       this.$router.setHeaderTitle('YT Music');
 
+      MAIN_DURATION_ELAPSED = document.getElementById('main_duration_elapsed');
       MAIN_DURATION_SLIDER = document.getElementById('main_duration_slider');
       MAIN_CURRENT_TIME = document.getElementById('main_current_time');
       MAIN_DURATION = document.getElementById('main_duration');
@@ -2086,7 +2088,6 @@ window.addEventListener("load", () => {
       document.addEventListener('keydown', this.methods.onKeydown);
 
       MAIN_DURATION.innerHTML = convertTime(this.$state.getState('MAIN_PLAYER_DURATION'));
-      MAIN_DURATION_SLIDER.setAttribute("max", this.$state.getState('MAIN_PLAYER_DURATION'));
 
       this.$state.addStateListener('TRACKLIST_IDX', this.methods.listenTrackChange);
       this.methods.listenTrackChange(this.$state.getState('TRACKLIST_IDX'));
@@ -2142,18 +2143,19 @@ window.addEventListener("load", () => {
       onloadedmetadata: function(evt) {
         MAIN_BUFFERING.style.visibility = 'hidden';
         MAIN_DURATION.innerHTML = convertTime(evt.target.duration);
-        MAIN_DURATION_SLIDER.setAttribute("max", evt.target.duration);
       },
       ontimeupdate: function(evt) {
+        const duration = this.$state.getState('MAIN_PLAYER_DURATION') || 1;
+        const value = ((evt.target.currentTime / duration) * 100).toFixed(2);
         MAIN_CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-        MAIN_DURATION_SLIDER.value = evt.target.currentTime;
+        MAIN_DURATION_SLIDER.style.marginLeft = `${value}%`;
+        MAIN_DURATION_ELAPSED.style.width = `${value}%`;
         MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
-        // console.log('ontimeupdate', evt.target.duration); // weird ¯\_(ツ)_/¯
         if (MAIN_PLAYER.buffered.length > 0) {
-          const value = (MAIN_PLAYER.buffered.end(MAIN_PLAYER.buffered.length - 1) / this.$state.getState('MAIN_PLAYER_DURATION')) * 100;
-          MAIN_BUFFERED.style.width = `${Math.round(value-1)}%`;
-          // console.log("Start: " + MAIN_PLAYER.buffered.start(0) + " End: "  + MAIN_PLAYER.buffered.end(MAIN_PLAYER.buffered.length - 1) + ", " + Math.round(value));
+          const value = (MAIN_PLAYER.buffered.end(MAIN_PLAYER.buffered.length - 1) / duration) * 100;
+          MAIN_BUFFERED.style.width = `${(value+5).toFixed(2)}%`;
         }
+        // console.log('ontimeupdate', evt.target.duration); // weird behaviour ¯\_(ツ)_/¯
       },
       onpause: function() {
         MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';
@@ -2163,8 +2165,10 @@ window.addEventListener("load", () => {
       },
       onseeking: function(evt) {
         MAIN_BUFFERING.style.visibility = 'visible';
+        const duration = this.$state.getState('MAIN_PLAYER_DURATION') || 1;
+        const value = ((evt.target.currentTime / duration) * 100).toFixed(2);
         MAIN_CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-        MAIN_DURATION_SLIDER.value = evt.target.currentTime;
+        MAIN_DURATION_SLIDER.style.marginLeft = `${value}%`;
       },
       onseeked: function(evt) {
         MAIN_BUFFERING.style.visibility = 'hidden';
