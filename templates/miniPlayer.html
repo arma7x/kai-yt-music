@@ -1,30 +1,42 @@
 <div class="kui-option-menu">
   <style>
-    input[type="range"]::-moz-range-progress {
-      background-color: #FF0000;
+    .duration-container {
+      position:relative;
+      height:22px;
+      width:95%;
     }
-    input[type="range"]::-moz-range-track {
-      background-color: rgba(192, 192, 192, 1);
+    .duration-bar {
+      position:absolute;
+      top:10px;
+      width:0%;
+      height:4px;
+      border-radius:5px;
     }
-    input[type=range]::-moz-range-thumb {
-      border: 1px solid #c0c0c0;
-      height: 10px;
-      width: 1px;
-      border-radius: 0%;
-      background: #c0c0c0;
-      cursor: pointer;
+    .duration-marker {
+      position:absolute;
+      top:7px;
+      margin-left:0%;
+      background-color:#ffffff;
+      width:10px;
+      height:10px;
+      border-radius:50%;
     }
   </style>
   <div class="kui-option-title" style="overflow:hidden;">Mini Player</div>
   <div class="kui-option-body kai-padding-5">
-    <div style="margin-top:5px;position:relative;">
-      <input id="duration_slider" style="width:99%;background-color:rgba(0,0,0,0);border-color:rgba(0,0,0,0);" value="0" type="range" min="0" max="100" disabled/>
-      <div id="duration_buffered" style="margin-left:1px;height:3px;background-color:rgba(255,0,0,0.5);position:absolute;top:8px;"></div>
+
+    <div class="duration-container" style="margin-top:5px;">
+      <div                             class="duration-bar" style="background-color:#c0c0c0;width:105%"></div>
+      <div id="duration_elapsed"  class="duration-bar" style="background-color:rgba(255, 0, 0, 1);"></div>
+      <div id="duration_buffered" class="duration-bar" style="background-color:rgba(255, 0, 0, 0.5);"></div>
+      <div id="duration_slider" class="duration-marker" style="background-color:#000000;"></div>
     </div>
+
     <div class="kui-row-center">
       <div id="current_time" style="width:34%;">00:00</div>
       <img id="play_btn" width="36px" height="36px" src="/icons/img/play.png"/>
       <div id="duration" style="width:34%;text-align:right;">00:00</div>
     </div>
+
   </div>
 </div>

@@ -812,7 +812,7 @@ window.addEventListener("load", () => {
 
   const miniPlayer = function($router, url) {
 
-    var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION, BUFFERED;
+    var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION, DURATION_ELAPSED, BUFFERED;
     const MINI_PLAYER = document.createElement("audio");
     MINI_PLAYER.volume = navigator.mozAudioChannelManager ? 1 : 0.02;
     MINI_PLAYER.mozAudioChannelType = 'content';
@@ -840,6 +840,8 @@ window.addEventListener("load", () => {
           right: function() {}
         },
         mounted: function() {
+
+          DURATION_ELAPSED = document.getElementById('duration_elapsed');
           DURATION_SLIDER = document.getElementById('duration_slider');
           CURRENT_TIME = document.getElementById('current_time');
           DURATION = document.getElementById('duration');
@@ -880,18 +882,19 @@ window.addEventListener("load", () => {
         methods: {
           onloadedmetadata: function(evt) {
             MINI_PLAYER.fastSeek(0);
-            var duration = evt.target.duration;
-            DURATION.innerHTML = convertTime(evt.target.duration);
-            DURATION_SLIDER.setAttribute("max", duration);
             this.data.duration = evt.target.duration;
+            DURATION.innerHTML = convertTime(evt.target.duration);
           },
           ontimeupdate: function(evt) {
+            const duration = this.data.duration || 1;
+            const value = ((evt.target.currentTime / duration) * 100).toFixed(2);
             var currentTime = evt.target.currentTime;
             CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-            DURATION_SLIDER.value = currentTime;
+            DURATION_SLIDER.style.marginLeft = `${value}%`;
+            DURATION_ELAPSED.style.width = `${value}%`;
             if (MINI_PLAYER.buffered.length > 0) {
-              const value = (MINI_PLAYER.buffered.end(MINI_PLAYER.buffered.length - 1) / this.data.duration) * 100;
-              BUFFERED.style.width = `${Math.round(value-1)}%`;
+              const value = (MINI_PLAYER.buffered.end(MINI_PLAYER.buffered.length - 1) / duration) * 100;
+              BUFFERED.style.width = `${(value+5).toFixed(2)}%`;
             }
           },
           onpause: function() {
@@ -902,8 +905,10 @@ window.addEventListener("load", () => {
           },
           onseeking: function(evt) {
             $router.showLoading(false);
+            const duration = this.data.duration || 1;
+            const value = ((evt.target.currentTime / duration) * 100).toFixed(2);
             CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
-            DURATION_SLIDER.value = evt.target.currentTime;
+            DURATION_SLIDER.style.marginLeft = `${value}%`;
           },
           onseeked: function(evt) {
             $router.hideLoading();
