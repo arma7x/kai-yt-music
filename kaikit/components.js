@@ -383,7 +383,7 @@ Kai.createOptionMenu = function(title, options, selectText, selectCb, closeCb, v
       <div class="kui-option-body">\
         <ul id="kui-options" class="kui-options">\
           {{#options}}\
-            <li class="optMenuNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'><span class="sr-only">{{ _idx }}, {{text}}{{#subtext}}, {{subtext}}{{/subtext}}' + sr + '</span><span style="width:98%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}</li>\
+            <li class="optMenuNav" tabIndex="{{_tabIndex}}" @click=\'selectOption({{__stringify__}})\'><span class="sr-only">{{ _idx }}, {{text}}{{#subtext}}, {{subtext}}{{/subtext}}' + sr + '</span><span style="padding-bottom:3px;width:98%;overflow:hidden;text-overflow: ellipsis;">{{text}}</span>{{#subtext}}</br><small>{{subtext}}</small>{{/subtext}}</li>\
           {{/options}}\
         </ul>\
       </div>\
