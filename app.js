@@ -2362,19 +2362,21 @@ window.addEventListener("load", () => {
           } else if (selected.text === 'Playlist') {
             this.$router.push('playlist');
           } else if (selected.text === 'Preferred Mime') {
-            const mime = this.$state.getState('CONFIGURATION')['mimeType'];
+            const CONFIG = this.$state.getState('CONFIGURATION');
+            const match = CONFIG['mimeType'];
             const opts = [
-              { "text": "audio", "checked": mime === "audio" },
-              { "text": "audio/webm", "checked": mime === "audio/webm" },
-              { "text": "audio/mp4", "checked": mime === "audio/mp4" }
+              { "text": "audio", "checked": match === "audio" },
+              { "text": "audio/webm", "checked": match === "audio/webm" },
+              { "text": "audio/mp4", "checked": match === "audio/mp4" }
             ];
             const idx = opts.findIndex((opt) => {
-              return opt.text === mime;
+              return opt.text === match;
             });
             this.$router.showSingleSelector('Preferred Mime', opts, 'Select', (selected) => {
               T_CONFIGURATION.setItem('mimeType', selected.text)
               .then((value) => {
-                this.$state.setState('mimeType', value);
+                CONFIG['mimeType'] = value;
+                this.$state.setState('CONFIGURATION', CONFIG);
               });
             }, 'Cancel', null, undefined, idx);
           } else if (selected.text === 'Clear Caches') {
