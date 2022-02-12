@@ -184,7 +184,7 @@ function searchVideo(query = '', key, pageToken) {
         },
         continuation: pageToken
       };
-      xhr('POST', `https://www.youtube.com/youtubei/v1/search?key=${key}`, form, {}, XHR_HEADER)
+      xhr('POST', `https://www.youtube.com/youtubei/v1/search?app=desktop&key=${key}`, form, {}, XHR_HEADER)
       .then((data) => {
         parseJsonFormat(data.response.onResponseReceivedCommands[0].appendContinuationItemsAction.continuationItems, json);
         resolve(json);
@@ -195,7 +195,7 @@ function searchVideo(query = '', key, pageToken) {
     } else {
       var URL = `https://www.youtube.com/`;
       if (query.trim().length > 0) {
-        URL = `https://www.youtube.com/results?q=${encodeURIComponent(query)}`;
+        URL = `https://www.youtube.com/results?app=desktop&q=${encodeURIComponent(query)}`;
       }
       xhr('GET', URL, {}, {}, XHR_HEADER)
       .then((data) => {
