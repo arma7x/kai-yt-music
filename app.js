@@ -372,8 +372,8 @@ window.addEventListener("load", () => {
     return REPEAT_BTN;
   }
 
-  function init(from = null) {
-    console.log('INIT_APP:', from);
+  function init(dbg = null) {
+    console.log('INIT:', dbg);
     T_CONFIGURATION.getItem('SHUFFLE')
     .then((SHUFFLE) => {
       if (SHUFFLE == null)
@@ -402,7 +402,7 @@ window.addEventListener("load", () => {
         done--;
         if (done <= 0 ) {
           state.setState('CONFIGURATION', kv);
-          console.log(state.getState('CONFIGURATION'));
+          // console.log(state.getState('CONFIGURATION'));
         }
       })
       .catch((err) => {
@@ -1235,6 +1235,7 @@ window.addEventListener("load", () => {
                       .then((saved) => {
                         this.$router.showToast('DONE');
                         this.$state.setState('PLAYLIST', PLAYLIST);
+                        this.methods.getPlaylist();
                       })
                       .catch((err) => {
                         this.$router.showToast(err.toString());
@@ -1274,7 +1275,113 @@ window.addEventListener("load", () => {
               }
             } else if (selected.text === 'Sync') {
               // exclude current collections
-              console.log('SYNC', _selected);
+              console.log('SYNC', _selected.collections);
+              const playlistId = _selected.sync;
+              const DB = this.$state.getState('DATABASE');
+              const PLAYLIST = this.$state.getState('PLAYLIST');
+              if (PLAYLIST[playlistId] == null) {
+                this.$router.showToast(`Playlist ID not exist`);
+                return;
+              }
+              this.$router.showLoading();
+              getPlaylistVideos(playlistId)
+              .then((result) => {
+                setTimeout(() => {
+                  result = result.filter((v) => {
+                    if (_selected.collections.indexOf(v.id) === -1) {
+                      v.checked = true;
+                      v.text = v.title;
+                      return true;
+                    }
+                    return false;
+                  });
+                  if (result.length === 0) {
+                    this.$router.showToast('Up-to-date');
+                    return;
+                  }
+                  this.$router.showMultiSelector(`Sync Playlist(${result.length})`, result, 'Select', null, 'Save', (list) => {
+                    const playlist = _selected;
+                    const audio = {};
+                    list.forEach((i) => {
+                      if (i.checked && DB[i.id] == null) {
+                        playlist.collections.push(i.id);
+                        audio[i.id] = {
+                          id: i.id,
+                          audio_title: i.title,
+                          duration: false,
+                          title: false,
+                          artist: false,
+                          album: false,
+                          genre: false,
+                          year: false,
+                          track: false,
+                          local_stream: false,
+                        }
+                      } else if (i.checked && DB[i.id]) {
+                        playlist.collections.push(i.id);
+                      }
+                    });
+                    if (playlist.collections.length === 0) {
+                      this.$router.showToast('No track selected');
+                      return;
+                    }
+                    var success = 0;
+                    var done = Object.keys(audio).length;
+                    if (done === 0) {
+                      T_PLAYLIST.setItem(playlistId.toString(), playlist)
+                      .then((savedPlaylist) => {
+                        PLAYLIST[playlistId] = savedPlaylist;
+                        this.$state.setState('PLAYLIST', PLAYLIST);
+                        console.log('1 PLAYLIST SUCCESS:', playlistId, success);
+                        this.$router.showToast('SYNC Success');
+                        this.methods.getPlaylist();
+                      });
+                      return;
+                    }
+                    for (var x in audio) {
+                      T_AUDIO.setItem(x, audio[x])
+                      .then((savedAudio) => {
+                        success++;
+                        done--;
+                        if (done === 0) {
+                          if (success === Object.keys(audio).length) {
+                            T_PLAYLIST.setItem(playlistId.toString(), playlist)
+                            .then((savedPlaylist) => {
+                              PLAYLIST[playlistId] = savedPlaylist;
+                              Object.assign(DB, audio);
+                              this.$state.setState('PLAYLIST', PLAYLIST);
+                              this.$state.setState('DATABASE', DB);
+                              console.log('2 PLAYLIST SUCCESS:', playlistId, success);
+                              this.$router.showToast('SYNC Success');
+                              this.methods.getPlaylist();
+                            });
+                          } else {
+                            console.log('1 PLAYLIST FAIL:', playlistId, success);
+                          }
+                        }
+                      })
+                      .catch((err) => {
+                        console.log(err);
+                        done--;
+                        if (done === 0) {
+                          console.log('2 PLAYLIST FAIL:', playlistId, success);
+                        }
+                      });
+                    }
+                  }, 'Cancel', null, () => {}, 0);
+                }, 100);
+              })
+              .catch((err) => {
+                console.log(err);
+                if (typeof err === 'string') {
+                  this.$router.showToast(err);
+                } else {
+                  this.$router.showToast('Network Error');
+                }
+              })
+              .finally(() => {
+                this.$router.hideLoading();
+              });
             }
           }, () => {
             setTimeout(() => {
@@ -2308,7 +2415,7 @@ window.addEventListener("load", () => {
                 }
               });
               if (playlist.collections.length === 0) {
-                this.$router.showToast('At least 1 track');
+                this.$router.showToast('No track selected');
                 return;
               }
               var success = 0;
@@ -2319,7 +2426,7 @@ window.addEventListener("load", () => {
                   PLAYLIST[playlistId] = savedPlaylist;
                   this.$state.setState('PLAYLIST', PLAYLIST);
                   console.log('1 PLAYLIST SUCCESS:', playlistId, success);
-                  this.$router.showToast('Success');
+                  this.$router.showToast('IMPORT Success');
                 });
                 return;
               }
@@ -2337,7 +2444,7 @@ window.addEventListener("load", () => {
                         this.$state.setState('PLAYLIST', PLAYLIST);
                         this.$state.setState('DATABASE', DB);
                         console.log('2 PLAYLIST SUCCESS:', playlistId, success);
-                        this.$router.showToast('Success');
+                        this.$router.showToast('IMPORT Success');
                       });
                     } else {
                       console.log('1 PLAYLIST FAIL:', playlistId, success);
