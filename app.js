@@ -1173,7 +1173,7 @@ window.addEventListener("load", () => {
         if (_selected) {
           var menus = [
             { text: 'Tracklist' },
-            { text: 'Update' },
+            { text: 'Rename' },
             { text: 'Delete' },
           ]
           if (_selected.sync) {
@@ -1219,7 +1219,7 @@ window.addEventListener("load", () => {
                   this.$router.showToast('Empty Tracklist');
                 }
               }
-            } else if (selected.text === 'Update') {
+            } else if (selected.text === 'Rename') {
               playlistEditor(this, _selected.name, _selected.id);
             } else if (selected.text === 'Delete'){
               const PLAYLIST = this.$state.getState('PLAYLIST');
