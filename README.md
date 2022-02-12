@@ -7,7 +7,7 @@
 - ~~Remove audio equalizer~~(DONE)
 - ~~LOCALSTORAGE to INDEXDB~~(DONE)
 - ~~Improve Main Player~~(DONE)
-- Improve UI(WIP)
+- ~~Improve UI~~(DONE)
 - Support youtube playlist(WIP)
 	- ~~Import playlist~~(DONE)
 	- ~~Scan playlist id qr-code~~(DONE)

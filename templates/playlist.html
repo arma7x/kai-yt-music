@@ -1,7 +1,19 @@
 <div class="kui-flex-wrap">
+  <style>
+  .playlist-title {
+    width: 85%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 3px;
+    font-weight: bold;
+  }
+  </style>
   <ul class="kui-list kai-container">
     {{#playlists}}
-    <li class="playlistNav kui-divider">{{ name }}</li>
+    <li class="playlistNav kui-divider" style="justify-content:space-between;">
+      <span class="playlist-title">{{ name }}</span>
+      {{#sync}}<span class="kai-icon-wifi" style="font-size:12px;"></span>{{/sync}}
+    </li>
     {{/playlists}}
   </ul>
 </div>

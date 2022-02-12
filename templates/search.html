@@ -1,6 +1,6 @@
 <div class="kui-flex-wrap">
   <style>
-  h1, h2, h3, h4, h5, h6, ul, p, pre {
+  pre {
     margin: 0;
     padding: 0;
   }
@@ -19,9 +19,12 @@
     padding-top:5px;
   }
   .wrapper-album-img {
+    width:50px;
+    height:50px;
     object-fit:cover;
-    max-width:50px;
-    max-height:50px;
+    background-size:cover;
+    background-repeat:no-repeat;
+    background-position:center;
   }
   .wrapper-info {
     height: 50px;
@@ -34,7 +37,8 @@
     overflow: hidden;
   }
   .wrapper-info-child {
-    font-size:10px;
+    font-size: 11px;
+    font-family: 'Open Sans', sans-serif;
     white-space: pre-wrap!important;
     word-break: break-word!important;
   }
@@ -45,11 +49,11 @@
         <li class="searchNav li-style kui-divider">
           <div class="wrapper">
             <div class="wrapper-album">
-              <img src="https://i.ytimg.com/vi/{{ id }}/hqdefault.jpg" class="wrapper-album-img" width="50px" height="50px"/>
+              <div class="wrapper-album-img" style="background-image:url(https://i.ytimg.com/vi/{{ id }}/hqdefault.jpg)"></div>
             </div>
             <div class="wrapper-info">
-              <pre class="wrapper-info-child">{{#title}}{{ title }}{{/title}}{{^title}}{{ audio_title }}{{/title}}</pre>
-              <pre class="wrapper-info-child">Duration: {{ duration }}</pre>
+              <pre class="wrapper-info-child" style="max-height:37.95px;overflow:hidden;">{{#title}}{{ title }}{{/title}}{{^title}}{{ audio_title }}{{/title}}</pre>
+              {{#duration}}<pre class="wrapper-info-child" style="font-weight:lighter;text-align:right;">{{ duration }}</pre>{{/duration}}
             </div>
           </div>
         </li>
