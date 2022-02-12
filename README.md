@@ -2,7 +2,7 @@
 
 ## The title explain everything
 
-##### master(STABLE, v2.x.x):
+##### master(v2.x.x):
 - Stream audio from local file, fallback to network stream(DONE)
 - Remove audio equalizer(DONE)
 - Migrate from LOCALSTORAGE to INDEXDB(DONE)
@@ -13,6 +13,7 @@
 	- Import playlist(DONE)
 	- Sync playlist(DONE)
 - NOTED. master(v2.x.x) branch not compatible with legacy(v1.x.x)
+
 ##### legacy(v1.x.x):
 - EOL(end of life)
 
