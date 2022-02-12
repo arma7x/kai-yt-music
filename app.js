@@ -850,8 +850,10 @@ window.addEventListener("load", () => {
           MINI_PLAYER.addEventListener('play', this.methods.onplay);
           MINI_PLAYER.addEventListener('seeking', this.methods.onseeking);
           MINI_PLAYER.addEventListener('seeked', this.methods.onseeked);
+          MINI_PLAYER.addEventListener('ratechange', this.methods.onratechange);
           MINI_PLAYER.addEventListener('ended', this.methods.onended);
           MINI_PLAYER.addEventListener('error', this.methods.onerror);
+          document.addEventListener('keydown', this.methods.onKeydown);
           // console.log('miniPlayer:', url);
           if (!navigator.mozAudioChannelManager) {
             $router.setSoftKeyRightText((MINI_PLAYER.volume * 100).toFixed(0) + '%');
@@ -869,8 +871,10 @@ window.addEventListener("load", () => {
           MINI_PLAYER.removeEventListener('play', this.methods.onplay);
           MINI_PLAYER.removeEventListener('seeking', this.methods.onseeking);
           MINI_PLAYER.removeEventListener('seeked', this.methods.onseeked);
+          MINI_PLAYER.removeEventListener('ratechange', this.methods.onratechange);
           MINI_PLAYER.removeEventListener('ended', this.methods.onended);
           MINI_PLAYER.removeEventListener('error', this.methods.onerror);
+          document.removeEventListener('keydown', this.methods.onKeydown);
         },
         methods: {
           onloadedmetadata: function(evt) {
@@ -903,6 +907,9 @@ window.addEventListener("load", () => {
           onseeked: function(evt) {
             $router.hideLoading();
           },
+          onratechange: function() {
+            $router.setSoftKeyCenterText(`${MINI_PLAYER.playbackRate}x`);
+          },
           onended: function() {
             PLAY_BTN.src = '/icons/img/play.png';
           },
@@ -916,6 +923,23 @@ window.addEventListener("load", () => {
               $router.showToast('Error');
             }
           },
+          onKeydown: function (evt) {
+            switch (evt.key) {
+              case '2':
+                if (MINI_PLAYER.playbackRate >= 4)
+                  return
+                MINI_PLAYER.playbackRate += 0.25;
+                break;
+              case '5':
+                MINI_PLAYER.playbackRate = 1;
+                break;
+              case '8':
+                if (MINI_PLAYER.playbackRate <= 0.5)
+                  return
+                MINI_PLAYER.playbackRate -= 0.25;
+                break;
+            }
+          }
         },
         dPadNavListener: {
           arrowUp: function() {
