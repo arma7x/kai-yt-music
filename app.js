@@ -40,6 +40,7 @@ var MAIN_THUMB;
 var MAIN_TITLE;
 var MAIN_PLAY_BTN;
 var MAIN_BUFFERING;
+var MAIN_BUFFERED;
 
 var LFT_DBL_CLICK_TH = 0;
 var LFT_DBL_CLICK_TIMER = undefined;
@@ -810,7 +811,7 @@ window.addEventListener("load", () => {
 
   const miniPlayer = function($router, url) {
 
-    var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION;
+    var PLAY_BTN, DURATION_SLIDER, CURRENT_TIME, DURATION, BUFFERED;
     const MINI_PLAYER = document.createElement("audio");
     MINI_PLAYER.volume = 1;
     MINI_PLAYER.mozAudioChannelType = 'content';
@@ -820,6 +821,7 @@ window.addEventListener("load", () => {
         name: 'miniPlayer',
         data: {
           title: 'miniPlayer',
+          duration: 0,
         },
         templateUrl: document.location.origin + '/templates/miniPlayer.html',
         softKeyText: { left: 'Exit', center: '', right: '' },
@@ -841,6 +843,7 @@ window.addEventListener("load", () => {
           CURRENT_TIME = document.getElementById('current_time');
           DURATION = document.getElementById('duration');
           PLAY_BTN = document.getElementById('play_btn');
+          BUFFERED = document.getElementById('duration_buffered');
           MINI_PLAYER.addEventListener('loadedmetadata', this.methods.onloadedmetadata);
           MINI_PLAYER.addEventListener('timeupdate', this.methods.ontimeupdate);
           MINI_PLAYER.addEventListener('pause', this.methods.onpause);
@@ -875,11 +878,16 @@ window.addEventListener("load", () => {
             var duration = evt.target.duration;
             DURATION.innerHTML = convertTime(evt.target.duration);
             DURATION_SLIDER.setAttribute("max", duration);
+            this.data.duration = evt.target.duration;
           },
           ontimeupdate: function(evt) {
             var currentTime = evt.target.currentTime;
             CURRENT_TIME.innerHTML = convertTime(evt.target.currentTime);
             DURATION_SLIDER.value = currentTime;
+            if (MINI_PLAYER.buffered.length > 0) {
+              const value = (MINI_PLAYER.buffered.end(MINI_PLAYER.buffered.length - 1) / this.data.duration) * 100;
+              BUFFERED.style.width = `${Math.round(value-1)}%`;
+            }
           },
           onpause: function() {
             PLAY_BTN.src = '/icons/img/play.png';
@@ -898,10 +906,15 @@ window.addEventListener("load", () => {
           onended: function() {
             PLAY_BTN.src = '/icons/img/play.png';
           },
-          onerror: function () {
+          onerror: function (evt) {
             MINI_PLAYER.pause();
+            console.log(evt);
             PLAY_BTN.src = '/icons/img/play.png';
-            $router.showToast('Error');
+            if (evt.target.error.code === 4) {
+              $router.showToast('Please clear caches');
+            } else {
+              $router.showToast('Error');
+            }
           },
         },
         dPadNavListener: {
@@ -2034,6 +2047,7 @@ window.addEventListener("load", () => {
       MAIN_TITLE = document.getElementById('main_title');
       MAIN_PLAY_BTN = document.getElementById('main_play_btn');
       MAIN_BUFFERING = document.getElementById('thumb_buffering');
+      MAIN_BUFFERED = document.getElementById('main_duration_buffered');
       MAIN_CURRENT_TIME.innerHTML = convertTime(MAIN_PLAYER.currentTime);
 
       MAIN_PLAYER.addEventListener('loadedmetadata', this.methods.onloadedmetadata);
@@ -2111,6 +2125,11 @@ window.addEventListener("load", () => {
         MAIN_DURATION_SLIDER.value = evt.target.currentTime;
         MAIN_PLAY_BTN.src = '/icons/img/baseline_pause_circle_filled_white_36dp.png';
         // console.log('ontimeupdate', evt.target.duration); // weird ¯\_(ツ)_/¯
+        if (MAIN_PLAYER.buffered.length > 0) {
+          const value = (MAIN_PLAYER.buffered.end(MAIN_PLAYER.buffered.length - 1) / this.$state.getState('MAIN_PLAYER_DURATION')) * 100;
+          MAIN_BUFFERED.style.width = `${Math.round(value-1)}%`;
+          // console.log("Start: " + MAIN_PLAYER.buffered.start(0) + " End: "  + MAIN_PLAYER.buffered.end(MAIN_PLAYER.buffered.length - 1) + ", " + Math.round(value));
+        }
       },
       onpause: function() {
         MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';

@@ -1,24 +1,25 @@
 <div class="kui-option-menu">
   <style>
     input[type="range"]::-moz-range-progress {
-      background-color: #c0c0c0;
+      background-color: #FF0000;
     }
     input[type="range"]::-moz-range-track {
-      background-color: #c0c0c0;
+      background-color: rgba(192, 192, 192, 1);
     }
     input[type=range]::-moz-range-thumb {
-      border: 1px solid #000;
-      height: 12px;
-      width: 12px;
-      border-radius: 50%;
-      background: #fff;
+      border: 1px solid #c0c0c0;
+      height: 10px;
+      width: 1px;
+      border-radius: 0%;
+      background: #c0c0c0;
       cursor: pointer;
     }
   </style>
   <div class="kui-option-title" style="overflow:hidden;">Mini Player</div>
   <div class="kui-option-body kai-padding-5">
-    <div>
+    <div style="margin-top:5px;position:relative;">
       <input id="duration_slider" style="width:99%;background-color:#ffffff;border-color:#ffffff;" value="0" type="range" min="0" max="100" disabled/>
+      <div id="duration_buffered" style="margin-left:1px;height:3px;background-color:rgba(255,0,0,0.5);position:absolute;top:8px;"></div>
     </div>
     <div class="kui-row-center">
       <div id="current_time" style="width:34%;">00:00</div>
