@@ -591,6 +591,7 @@ h1, h2, h3, h4, h5, ul, p {
     background-color: #d8d8d8;
     height: 28px;
     line-height: 28px;
+    overflow: hidden;
 }
 
 .kui-option-menu .kui-option-body {
