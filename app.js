@@ -1,5 +1,4 @@
 localforage.setDriver(localforage.INDEXEDDB);
-const MIME = {"audio/aac":"aac","audio/x-aac":"aac","audio/adpcm":"adp","application/vnd.audiograph":"aep","audio/x-aiff":"aif","audio/amr":"amr","audio/basic":"au","audio/x-caf":"caf","audio/vnd.dra":"dra","audio/vnd.dts":"dts","audio/vnd.dts.hd":"dtshd","audio/vnd.nuera.ecelp4800":"ecelp4800","audio/vnd.nuera.ecelp7470":"ecelp7470","audio/vnd.nuera.ecelp9600":"ecelp9600","audio/vnd.digital-winds":"eol","audio/x-flac":"flac","audio/vnd.lucent.voice":"lvp","audio/x-mpegurl":"m3u","audio/x-m4a":"m4a","audio/midi":"mid","audio/x-matroska":"mka","audio/mpeg":"mp3","audio/mp4":"mp4a","audio/mobile-xmf":"mxmf","audio/ogg":"opus","audio/vnd.ms-playready.media.pya":"pya","audio/x-realaudio":"ra","audio/x-pn-realaudio":"ram","audio/vnd.rip":"rip","audio/x-pn-realaudio-plugin":"rmp","audio/s3m":"s3m","application/vnd.yamaha.smaf-audio":"saf","audio/silk":"sil","audio/vnd.dece.audio":"uva","audio/x-wav":"wav","audio/x-ms-wax":"wax","audio/webm":"weba","audio/x-ms-wma":"wma","audio/xm":"xm"};
 
 var BOOT = false;
 var SLEEP_TIMER = null;
@@ -12,8 +11,10 @@ const DB_NAME = 'YT_MUSIC';
 const DB_AUDIO = 'YT_AUDIO'; // { id: { ...metadata } }
 const DB_PLAYLIST = 'YT_PLAYLIST'; // { id: {name, sync, collections: []} }
 const DB_CACHED_URL = 'YT_CACHED_URL'; // { id: URL }
-const DB_PLAYING = 'YT_PLAYING'; // localStorage string
-const DB_CONFIGURATION = 'YT_CONFIGURATION';const T_AUDIO = localforage.createInstance({
+const DB_PLAYING = 'YT_PLAYING'; //
+const DB_CONFIGURATION = 'YT_CONFIGURATION';
+
+const T_AUDIO = localforage.createInstance({
   name: DB_NAME,
   storeName: DB_AUDIO
 });
@@ -50,115 +51,6 @@ var RGT_DBL_CLICK_TIMER = undefined;
 
 if (navigator.mozAudioChannelManager) {
   navigator.mozAudioChannelManager.volumeControlChannel = 'content';
-}
-
-function convertTime(time) {
-  if (isNaN(time)) {
-    if (typeof time === 'string')
-      return time.replace('00:', '');
-    return '00:00';
-  }
-  var hours = "";
-  var mins = Math.floor(time / 60);
-  if (mins > 59) {
-    var hr = Math.floor(mins / 60);
-    mins = Math.floor(mins - Number(60 * hr));
-    hours = hr;
-  }
-  if (hours != "") {
-    if (hours < 10) {
-      hours = "0" + String(hours) + ":";
-    } else {
-      hours = hours + ":";
-    }
-  }
-  if (mins < 10) {
-    mins = "0" + String(mins);
-  }
-  var secs = Math.floor(time % 60);
-  if (secs < 10) {
-    secs = "0" + String(secs);
-  }
-  return hours + mins + ":" + secs;
-}
-
-function readableFileSize(bytes, si = false, dp = 1) {
-  if (typeof bytes !== 'number') {
-    try {
-      bytes = JSON.parse(bytes);
-    } catch(e) {
-      return false;
-    }
-  }
-  const thresh = si ? 1000 : 1024;
-  if (Math.abs(bytes) < thresh) {
-    return bytes + ' Byte';
-  }
-  const units = si  ? ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-  let u = -1;
-  const r = Math.pow(10, dp);
-  do {
-    bytes /= thresh;
-    ++u;
-  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
-  return bytes.toFixed(dp) + '' + units[u];
-}
-
-function toggleVolume(PLYR, $router) {
-  if (navigator.mozAudioChannelManager) {
-    navigator.volumeManager.requestShow();
-    $router.setSoftKeyRightText('');
-  } else {
-    $router.setSoftKeyRightText((PLYR.volume * 100).toFixed(0) + '%');
-  }
-}
-
-function volumeUp(PLYR, $router, cb = () => {}) {
-  if (navigator.mozAudioChannelManager) {
-    navigator.volumeManager.requestUp();
-  } else {
-    if (PLYR.volume < 1) {
-      PLYR.volume = parseFloat((PLYR.volume + DEFAULT_VOLUME).toFixed(2));
-      cb(PLYR, $router);
-      $router.showToast('Volume ' + (PLYR.volume * 100).toFixed(0).toString() + '%');
-    }
-  }
-}
-
-function volumeDown(PLYR, $router, cb = () => {}) {
-  if (navigator.mozAudioChannelManager) {
-    navigator.volumeManager.requestDown();
-  } else {
-    if (PLYR.volume > 0) {
-      PLYR.volume = parseFloat((PLYR.volume - DEFAULT_VOLUME).toFixed(2));
-      cb(PLYR, $router);
-      $router.showToast('Volume ' + (PLYR.volume * 100).toFixed(0).toString() + '%');
-    }
-  }
-}
-
-function getURLParam(key, target) {
-  var values = [];
-  if (!target) target = location.href;
-
-  key = key.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-
-  var pattern = key + '=([^&#]+)';
-  var o_reg = new RegExp(pattern,'ig');
-  while (true){
-    var matches = o_reg.exec(target);
-    if (matches && matches[1]){
-      values.push(matches[1]);
-    } else {
-      break;
-    }
-  }
-
-  if (!values.length){
-    return [];
-  } else {
-    return values.length == 1 ? [values[0]] : values;
-  }
 }
 
 function putCachedURL(obj, url) {
@@ -294,6 +186,39 @@ window.addEventListener("load", () => {
       if (TRACKLIST[next]) {
         state.setState('TRACKLIST_IDX', next);
         playMainAudio(next);
+      }
+    }
+  }
+
+  function toggleVolume(PLYR, $router) {
+    if (navigator.mozAudioChannelManager) {
+      navigator.volumeManager.requestShow();
+      $router.setSoftKeyRightText('');
+    } else {
+      $router.setSoftKeyRightText((PLYR.volume * 100).toFixed(0) + '%');
+    }
+  }
+
+  function volumeUp(PLYR, $router, cb = () => {}) {
+    if (navigator.mozAudioChannelManager) {
+      navigator.volumeManager.requestUp();
+    } else {
+      if (PLYR.volume < 1) {
+        PLYR.volume = parseFloat((PLYR.volume + DEFAULT_VOLUME).toFixed(2));
+        cb(PLYR, $router);
+        $router.showToast('Volume ' + (PLYR.volume * 100).toFixed(0).toString() + '%');
+      }
+    }
+  }
+
+  function volumeDown(PLYR, $router, cb = () => {}) {
+    if (navigator.mozAudioChannelManager) {
+      navigator.volumeManager.requestDown();
+    } else {
+      if (PLYR.volume > 0) {
+        PLYR.volume = parseFloat((PLYR.volume - DEFAULT_VOLUME).toFixed(2));
+        cb(PLYR, $router);
+        $router.showToast('Volume ' + (PLYR.volume * 100).toFixed(0).toString() + '%');
       }
     }
   }
@@ -993,8 +918,6 @@ window.addEventListener("load", () => {
       title: 'settings',
       autoplay: false,
       autosleep: false,
-      apikey: false,
-      apisecret: false,
     },
     verticalNavClass: '.settingNav',
     templateUrl: document.location.origin + '/templates/settings.html',
