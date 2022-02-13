@@ -968,6 +968,25 @@ window.addEventListener("load", () => {
     );
   }
 
+  const keypadshorcuts = new Kai({
+    name: 'keypadshorcuts',
+    data: {
+      title: 'keypadshorcuts'
+    },
+    templateUrl: document.location.origin + '/templates/keypadshorcuts.html',
+    mounted: function() {
+      this.$router.setHeaderTitle('Keypad Shorcuts');
+    },
+    unmounted: function() {},
+    methods: {},
+    softKeyText: { left: '', center: '', right: '' },
+    softKeyListener: {
+      left: function() {},
+      center: function() {},
+      right: function() {}
+    }
+  });
+
   const settings = new Kai({
     name: 'settings',
     data: {
@@ -2508,6 +2527,7 @@ window.addEventListener("load", () => {
           { text: 'Import Youtube Playlist' },
           { text: 'Preferred Mime' },
           { text: 'Clear Caches' },
+          { text: 'Keypad Shorcuts' },
           { text: 'Settings' },
           { text: 'Exit' }
         ]
@@ -2562,6 +2582,8 @@ window.addEventListener("load", () => {
             } else {
               this.$router.showToast('No mediaDevices');
             }
+          } else if (selected.text === 'Keypad Shorcuts') {
+            this.$router.push('keypadshorcuts');
           } else if (selected.text === 'Exit') {
             window.close();
           }
@@ -2619,6 +2641,10 @@ window.addEventListener("load", () => {
       'settings': {
         name: 'settings',
         component: settings
+      },
+      'keypadshorcuts': {
+        name: 'keypadshorcuts',
+        component: keypadshorcuts
       },
     }
   });
