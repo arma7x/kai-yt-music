@@ -191,6 +191,16 @@ function fallback(id) {
   })
 }
 
+function fallbackV2(id) {
+  return xhr('GET', `https://inv.riverside.rocks/api/v1/videos/${id}`, {}, {}, XHR_HEADER)
+  .then((res) => {
+    return Promise.resolve(res.response);
+  })
+  .catch((e) => {
+    return Promise.reject('Invidious Error');
+  })
+}
+
 function execute(id) {
   return xhr('GET', `https://www.youtube.com/get_video_info?video_id=${id}&html5=1`, {}, {}, XHR_HEADER)
   .then((res) => {
@@ -225,7 +235,9 @@ function execute(id) {
     return Promise.resolve(result);
   })
   .catch((e) => {
-    return fallback(id);
+    return fallbackV2(id);
+    // return Promise.reject("Unknown Error");
+    // return fallback(id);
     // return Promise.reject(e);
   })
 }
@@ -264,12 +276,14 @@ function getVideoLinks(id) {
     } else if (result.adaptiveFormats) {
       var formats = [];
       for (var x in result.adaptiveFormats) {
+        var p = new URL(result.adaptiveFormats[x].url);
+        p.host = 'inv.riverside.rocks';
         formats.push({
           id: id,
-          mimeType: result.adaptiveFormats[x].mimeType.split(';')[0],
+          mimeType: result.adaptiveFormats[x].type.split(';')[0], // mimeType
           bitrate: result.adaptiveFormats[x].bitrate,
-          signatureCipher: result.adaptiveFormats[x].signatureCipher,
-          url: result.adaptiveFormats[x].url,
+          signatureCipher: result.adaptiveFormats[x].signatureCipher || null,
+          url: p.toString(), //result.adaptiveFormats[x].url,
           player: result.player || null,
           width: result.adaptiveFormats[x].width || 0,
           height: result.adaptiveFormats[x].height || 0,
