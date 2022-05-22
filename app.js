@@ -1702,7 +1702,7 @@ window.addEventListener("load", () => {
       title: 'database',
       bulk_results: [],
       results: [],
-      perPage: 9,
+      perPage: 50,
       nextPage: null
     },
     verticalNavClass: '.searchNav',
