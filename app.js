@@ -1472,7 +1472,7 @@ window.addEventListener("load", () => {
       this.methods.renderSoftKeyLCR();
     },
     unmounted: function() {
-      
+
     },
     methods: {
       selected: function(vid) {
@@ -2252,7 +2252,7 @@ window.addEventListener("load", () => {
         if (T) {
           MAIN_BUFFERING.style.visibility = 'hidden';
           MAIN_TITLE.innerHTML = T.title || T.audio_title;
-          MAIN_THUMB.style.backgroundImage = `url('https://i.ytimg.com/vi/${T.id}/hqdefault.jpg')`;
+          MAIN_THUMB.style.backgroundImage = `url('https://i.ytimg.com/vi/${T.id}/2.jpg')`;
           document.getElementById('main_artist').innerHTML = T.artist || 'UNKNOWN';
           document.getElementById('main_album').innerHTML = T.album || 'UNKNOWN';
           document.getElementById('main_genre').innerHTML = T.genre || 'UNKNOWN';
