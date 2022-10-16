@@ -301,7 +301,7 @@ function getVideoLinks(id) {
 
 function getPlaylistVideos(id) {
   return new Promise((resolve, reject) => {
-    xhr('GET', 'https://malaysiaapi.herokuapp.com/youtube/api/playlist', {}, {id:id})
+    xhr('GET', 'https://malaysiaapi-arma7x.koyeb.app/youtube/api/playlist', {}, {id:id})
     .then((result) => {
       const videos = result.response;
       if (videos.length > 0) {
