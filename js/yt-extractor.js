@@ -1,3 +1,5 @@
+const INVIDIOUS_INSTANCE = 'inv.riverside.rocks';
+
 const XHR_HEADER = {
   'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
   'x-wap-profile': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
@@ -192,7 +194,7 @@ function fallback(id) {
 }
 
 function fallbackV2(id) {
-  return xhr('GET', `https://inv.riverside.rocks/api/v1/videos/${id}`, {}, {}, XHR_HEADER)
+  return xhr('GET', `https://${INVIDIOUS_INSTANCE}/api/v1/videos/${id}`, {}, {}, XHR_HEADER)
   .then((res) => {
     return Promise.resolve(res.response);
   })
@@ -274,16 +276,17 @@ function getVideoLinks(id) {
       }
       return Promise.resolve(formats);
     } else if (result.adaptiveFormats) {
+      console.log(result);
       var formats = [];
       for (var x in result.adaptiveFormats) {
-        var p = new URL(result.adaptiveFormats[x].url);
-        p.host = 'inv.riverside.rocks';
+        // var p = new URL(result.adaptiveFormats[x].url);
+        // p.host = INVIDIOUS_INSTANCE;
         formats.push({
           id: id,
           mimeType: result.adaptiveFormats[x].type.split(';')[0], // mimeType
           bitrate: result.adaptiveFormats[x].bitrate,
           signatureCipher: result.adaptiveFormats[x].signatureCipher || null,
-          url: p.toString(), //result.adaptiveFormats[x].url,
+          url: result.adaptiveFormats[x].url, // p.toString(),
           player: result.player || null,
           width: result.adaptiveFormats[x].width || 0,
           height: result.adaptiveFormats[x].height || 0,
