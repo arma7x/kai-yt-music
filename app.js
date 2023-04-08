@@ -1461,6 +1461,7 @@ window.addEventListener("load", () => {
     data: {
       title: 'search',
       results: [],
+      empty: true,
       key: '',
       nextPageToken: null,
       estimatedResults: ''
@@ -1579,7 +1580,7 @@ window.addEventListener("load", () => {
         if (this.data.nextPageToken) {
           merged.push({ isAudio: false });
         }
-        this.setData({ results: merged });
+        this.setData({ results: merged, empty: merged.length === 0 });
         this.methods.renderSoftKeyLCR();
       },
       renderSoftKeyLCR: function() {
@@ -1702,6 +1703,7 @@ window.addEventListener("load", () => {
       title: 'database',
       bulk_results: [],
       results: [],
+      empty: true,
       perPage: 50,
       nextPage: null
     },
@@ -1709,7 +1711,7 @@ window.addEventListener("load", () => {
     templateUrl: document.location.origin + '/templates/search.html',
     mounted: function() {
       this.$state.addStateListener('DATABASE', this.methods.dbStateListener);
-      this.$router.setHeaderTitle('Local Database');
+      this.$router.setHeaderTitle('Local Audio Database');
       if (this.data.results.length === 0) {
         this.methods.resetSearch();
       }
@@ -1725,7 +1727,7 @@ window.addEventListener("load", () => {
         const item = temp[this.verticalNavIndex];
         Object.assign(item, db[item.id]);
         temp[this.verticalNavIndex] = item;
-        this.setData({ results: temp });
+        this.setData({ results: temp, empty: temp.length === 0 });
         this.$router.hideLoading();
       },
       selected: function(vid) {
@@ -1911,7 +1913,7 @@ window.addEventListener("load", () => {
         if (this.data.nextPage) {
           merged.push({ isAudio: false });
         }
-        this.setData({ results: merged });
+        this.setData({ results: merged, empty: merged.length === 0 });
         this.methods.renderSoftKeyLCR();
       },
       renderSoftKeyLCR: function() {
@@ -2228,7 +2230,8 @@ window.addEventListener("load", () => {
         MAIN_BUFFERING.style.visibility = 'hidden';
       },
       onratechange: function() {
-        this.$router.setSoftKeyCenterText(`${MAIN_PLAYER.playbackRate}x`);
+        if (this.$router.stack.bottomSheet === false)
+          this.$router.setSoftKeyCenterText(`${MAIN_PLAYER.playbackRate}x`);
       },
       onended: function() {
         MAIN_PLAY_BTN.src = '/icons/img/baseline_play_circle_filled_white_36dp.png';
@@ -2445,9 +2448,9 @@ window.addEventListener("load", () => {
       right: function() {
         const menus = [
           { text: 'Search' },
-          { text: 'Local Database' },
+          { text: 'Local Audio Database' },
           { text: 'Playlist' },
-          { text: 'Import Youtube Playlist' },
+          { text: 'Import Youtube Playlist ID' },
           { text: 'Preferred Mime' },
           { text: 'Clear Caches' },
           { text: 'Keypad Shorcuts' },
@@ -2459,7 +2462,7 @@ window.addEventListener("load", () => {
             this.$router.push('search');
           } else if (selected.text == 'Disable Equalizer' || selected.text == 'Enable Equalizer') {
             changeEqStatus();
-          } else if (selected.text === 'Local Database') {
+          } else if (selected.text === 'Local Audio Database') {
             this.$router.push('database');
           } else if (selected.text === 'Playlist') {
             this.$router.push('playlist');
@@ -2488,7 +2491,7 @@ window.addEventListener("load", () => {
             });
           } else if (selected.text === 'Settings') {
             this.$router.push('settings');
-          } else if (selected.text === 'Import Youtube Playlist') {
+          } else if (selected.text === 'Import Youtube Playlist ID') {
             if (navigator.mediaDevices) {
               navigator.mediaDevices.getUserMedia({ audio: false, video: true })
               .then(() => {
