@@ -23,8 +23,8 @@ function parseJsonFormat(contents, json) {
                         }
                     }
                     catch(ex) {
-                        console.error("Failed to parse renderer:", ex);
-                        console.log(content);
+                        // console.error("Failed to parse renderer:", ex);
+                        // console.log(content);
                     }
                 });
             }
@@ -45,8 +45,8 @@ function parseJsonFormat(contents, json) {
                     }
                 }
                 catch(ex) {
-                    console.error("Failed to parse renderer:", ex);
-                    console.log(content);
+                    // console.error("Failed to parse renderer:", ex);
+                    // console.log(content);
                 }
             }
             else if (sectionList.hasOwnProperty("continuationItemRenderer")) {
@@ -54,8 +54,8 @@ function parseJsonFormat(contents, json) {
             }
         }
         catch (ex) {
-            console.error("Failed to read contents for section list:", ex);
-            console.log(sectionList);
+            // console.error("Failed to read contents for section list:", ex);
+            // console.log(sectionList);
         }
     });
 }
@@ -75,7 +75,7 @@ function parseChannelRenderer(renderer) {
         "video_count": renderer.videoCountText ? renderer.videoCountText.runs.reduce(comb, "") : "",
         "subscriber_count": renderer.subscriberCountText ? renderer.subscriberCountText.simpleText : "0 subscribers",
         "verified": renderer.ownerBadges &&
-                    renderer.ownerBadges.some(badge => badge.metadataBadgeRenderer.style.indexOf("VERIFIED") > -1) || 
+                    renderer.ownerBadges.some(badge => badge.metadataBadgeRenderer.style.indexOf("VERIFIED") > -1) ||
                     false
     };
 
@@ -152,7 +152,7 @@ function parseVideoRenderer(renderer) {
         "url": `https://www.youtube.com${renderer.ownerText.runs[0].navigationEndpoint.commandMetadata.webCommandMetadata.url}`
     };
     uploader.verified = renderer.ownerBadges &&
-        renderer.ownerBadges.some(badge => badge.metadataBadgeRenderer.style.indexOf("VERIFIED") > -1) || 
+        renderer.ownerBadges.some(badge => badge.metadataBadgeRenderer.style.indexOf("VERIFIED") > -1) ||
         false;
 
     return { video: video, uploader: uploader };

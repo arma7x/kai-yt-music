@@ -279,7 +279,6 @@ function getVideoLinks(id) {
       }
       return Promise.resolve(formats);
     } else if (result.adaptiveFormats) {
-      console.log(result);
       var formats = [];
       for (var x in result.adaptiveFormats) {
         // var p = new URL(result.adaptiveFormats[x].url);

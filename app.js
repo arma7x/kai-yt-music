@@ -655,24 +655,21 @@ window.addEventListener("load", () => {
   function playMainAudioFallback(audio) {
     getCachedURL(audio.id)
     .then((url) => {
-      // console.log(url);
       MAIN_PLAYER.mozAudioChannelType = 'content';
       MAIN_PLAYER.src = url;
       if (state.getState('AUTOPLAY') && BOOT == false)
-        MAIN_PLAYER.play(); // TODO
+        MAIN_PLAYER.play();
       else if (BOOT)
         MAIN_PLAYER.play();
       BOOT = true;
     })
     .catch((err) => {
-      console.log(err);
       getAudioStreamURL(audio.id)
       .then((url) => {
-        // console.log(url);
         MAIN_PLAYER.mozAudioChannelType = 'content';
         MAIN_PLAYER.src = url;
         if (state.getState('AUTOPLAY') && BOOT == false)
-          MAIN_PLAYER.play(); // TODO
+          MAIN_PLAYER.play();
         else if (BOOT)
           MAIN_PLAYER.play();
         BOOT = true;
@@ -688,13 +685,12 @@ window.addEventListener("load", () => {
       return;
     }
     if (TRACKLIST[idx].local_stream) {
-      // console.log(TRACKLIST[idx].local_stream);
       DS.__getFile__(TRACKLIST[idx].local_stream)
       .then((file) => {
         MAIN_PLAYER.mozAudioChannelType = 'content';
         MAIN_PLAYER.src = window.URL.createObjectURL(file);
         if (state.getState('AUTOPLAY') && BOOT == false)
-          MAIN_PLAYER.play(); // TODO
+          MAIN_PLAYER.play();
         else if (BOOT)
           MAIN_PLAYER.play();
         BOOT = true;
