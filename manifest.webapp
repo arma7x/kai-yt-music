@@ -42,6 +42,9 @@
     },
     "video-capture": {
       "description": "Required for qr-code reader(playlist id qr-code)"
+    },
+    "tcp-socket": {
+      "description": "Check host SSL Cert(Lets Encrypt)"
     }
   },
   "locales": {

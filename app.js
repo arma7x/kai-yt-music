@@ -2451,6 +2451,7 @@ window.addEventListener("load", () => {
           { text: 'Clear Caches' },
           { text: 'Keypad Shorcuts' },
           { text: 'Settings' },
+          { text: 'Invidious Instances' },
           { text: 'Exit' }
         ]
         this.$router.showOptionMenu('Menu', menus, 'Select', (selected) => {
@@ -2508,6 +2509,28 @@ window.addEventListener("load", () => {
             this.$router.push('keypadshorcuts');
           } else if (selected.text === 'Exit') {
             window.close();
+          } else if (selected.text === 'Invidious Instances') {
+            this.$router.showLoading();
+            getAvailableInvidiousInstance()
+            .then(result => {
+              let idx = 0;
+              let opts = [];
+              result.forEach((item, i) => {
+                if (item.uri === window['_INVIDIOUS_INSTANCE_'])
+                  idx = i;
+                opts.push({ text: item.uri, subtext: item.region });
+              });
+              this.$router.showSingleSelector('Invidious Instances', opts, 'Select', (selected) => {
+                window['_INVIDIOUS_INSTANCE_'] = selected.text;
+                window.localStorage.setItem('_INVIDIOUS_INSTANCE_', window['_INVIDIOUS_INSTANCE_']);
+              }, 'Cancel', null, undefined, idx);
+            })
+            .catch(err => {
+              console.error(err);
+            })
+            .finally(() => {
+              this.$router.hideLoading();
+            });
           }
         }, () => {
           setTimeout(() => {}, 100);

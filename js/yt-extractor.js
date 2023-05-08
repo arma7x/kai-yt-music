@@ -1,4 +1,4 @@
-const INVIDIOUS_INSTANCE = 'inv.riverside.rocks';
+window['_INVIDIOUS_INSTANCE_'] = window.localStorage.getItem('_INVIDIOUS_INSTANCE_') || 'inv.riverside.rocks';
 
 const XHR_HEADER = {
   'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
@@ -199,11 +199,13 @@ function fallback(id) {
 }
 
 function fallbackV2(id) {
-  return xhr('GET', `https://${INVIDIOUS_INSTANCE}/api/v1/videos/${id}`, {}, {}, XHR_HEADER)
+  console.log('Fallback:', window['_INVIDIOUS_INSTANCE_']);
+  return xhr('GET', `https://${window['_INVIDIOUS_INSTANCE_']}/api/v1/videos/${id}`, {}, {}, XHR_HEADER)
   .then((res) => {
     return Promise.resolve(res.response);
   })
   .catch((e) => {
+    alert('Invidious Error');
     return Promise.reject('Invidious Error');
   })
 }
@@ -284,7 +286,7 @@ function getVideoLinks(id) {
       var formats = [];
       for (var x in result.adaptiveFormats) {
         // var p = new URL(result.adaptiveFormats[x].url);
-        // p.host = INVIDIOUS_INSTANCE;
+        // p.host = window['_INVIDIOUS_INSTANCE_'];
         formats.push({
           id: id,
           mimeType: result.adaptiveFormats[x].type.split(';')[0], // mimeType

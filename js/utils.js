@@ -75,3 +75,76 @@ function getURLParam(key, target) {
     return values.length == 1 ? [values[0]] : values;
   }
 }
+
+function pingInvidiousInstance(url) {
+  const timeout = setTimeout(() => {
+    throw("Timeout");
+  }, 30000);
+  const u = new URL(url);
+  return new Promise((resolve, reject) => {
+    const conn = navigator.mozTCPSocket.open(u.host, 443, { useSecureTransport: true });
+    conn.onopen = () => {
+      clearTimeout(timeout);
+      conn.close();
+      resolve(url);
+    }
+    conn.onerror = (err) => {
+      console.error(err);
+      clearTimeout(timeout);
+      reject(err);
+    }
+  });
+}
+
+function checkDomainAvailability(list = [], result = [], callback = () => {}) {
+  if (list.length === 0) {
+    callback(result);return;
+  }
+  const u = list.pop();
+  pingInvidiousInstance(`https://${u.uri}`)
+  .then((url) => {
+    result.push(u);
+  })
+  .catch(err => {
+  })
+  .finally(() => {
+    checkDomainAvailability([...list], [...result], callback);
+  });
+}
+
+function getInstance() {
+  return new Promise((resolve, reject) => {
+    xhr('GET', 'https://api.invidious.io/instances.json', {}, {}, {})
+    .then(result => {
+      let list = [];
+      result.response.forEach((instance) => {
+        if (instance[1].type && instance[1].type.indexOf('https') > -1) {
+          list.push({ uri: instance[0], region: instance[1].region });
+        }
+      });
+      resolve(list);
+    })
+    .catch(err => {
+      throw(err);
+    });
+  });
+}
+
+function getAvailableInvidiousInstance() {
+  return new Promise((resolve, reject) => {
+    getInstance().
+    then(list => {
+      try {
+        console.clear();
+        checkDomainAvailability([...list], [], (result) => {
+          resolve(result);
+        });
+      } catch (err) {
+        throw(err);
+      }
+    })
+    .catch(err => {
+      throw(err);
+    });
+  });
+}
