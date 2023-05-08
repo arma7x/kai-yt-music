@@ -7,7 +7,7 @@ const XHR_HEADER = {
 
 var xhr = function(method, url, data={}, query={}, headers={}) {
   return new Promise((resolve, reject) => {
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       throw("Timeout");
     }, 30000);
     var xhttp = new XMLHttpRequest({ mozSystem: true });
@@ -19,6 +19,7 @@ var xhr = function(method, url, data={}, query={}, headers={}) {
     xhttp.onreadystatechange = function() {
       if (this.readyState == 4) {
         if (this.status >= 200 && this.status <= 299) {
+          clearTimeout(timeout);
           try {
             const response = JSON.parse(xhttp.response);
             resolve({ raw: xhttp, response: response});
@@ -26,6 +27,7 @@ var xhr = function(method, url, data={}, query={}, headers={}) {
             resolve({ raw: xhttp, response: xhttp.responseText});
           }
         } else {
+          clearTimeout(timeout);
           try {
             const response = JSON.parse(xhttp.response);
             reject({ raw: xhttp, response: response});
