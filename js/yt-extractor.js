@@ -7,6 +7,9 @@ const XHR_HEADER = {
 
 var xhr = function(method, url, data={}, query={}, headers={}) {
   return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      throw("Timeout");
+    }, 30000);
     var xhttp = new XMLHttpRequest({ mozSystem: true });
     var _url = new URL(url);
     for (var y in query) {
