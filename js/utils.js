@@ -76,22 +76,24 @@ function getURLParam(key, target) {
   }
 }
 
-function pingInvidiousInstance(url) {
-  return xhr('HEAD', url);
-}
-
-function checkDomainAvailability(list = [], result = [], callback = () => {}) {
+function checkDomainAvailability(list = [], callback = () => {}) {
   if (list.length === 0) {
     callback(result);return;
   }
-  const u = list.pop();
-  pingInvidiousInstance(`https://${u.uri}`)
-  .then((url) => {
-    result.push(u);
-  })
-  .catch(err => {})
-  .finally(() => {
-    checkDomainAvailability([...list], [...result], callback);
+  let result = [];
+  let remainingTask = list.length;
+  list.forEach(u => {
+    xhr('HEAD', `https://${u.uri}`)
+    .then(() => {
+      result.push(u);
+    })
+    .catch(err => {})
+    .finally(() => {
+      remainingTask--;
+      if (remainingTask <= 0) {
+        callback(result)
+      }
+    });
   });
 }
 
@@ -119,7 +121,7 @@ function getAvailableInvidiousInstance() {
     then(list => {
       try {
         console.clear();
-        checkDomainAvailability([...list], [], (result) => {
+        checkDomainAvailability([...list], (result) => {
           resolve(result);
         });
       } catch (err) {
