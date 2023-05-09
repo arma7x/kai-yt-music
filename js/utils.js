@@ -77,23 +77,7 @@ function getURLParam(key, target) {
 }
 
 function pingInvidiousInstance(url) {
-  const timeout = setTimeout(() => {
-    throw("Timeout");
-  }, 30000);
-  const u = new URL(url);
-  return new Promise((resolve, reject) => {
-    const conn = navigator.mozTCPSocket.open(u.host, 443, { useSecureTransport: true });
-    conn.onopen = () => {
-      clearTimeout(timeout);
-      conn.close();
-      resolve(url);
-    }
-    conn.onerror = (err) => {
-      console.error(err);
-      clearTimeout(timeout);
-      reject(err);
-    }
-  });
+  return xhr('HEAD', url);
 }
 
 function checkDomainAvailability(list = [], result = [], callback = () => {}) {
@@ -105,8 +89,7 @@ function checkDomainAvailability(list = [], result = [], callback = () => {}) {
   .then((url) => {
     result.push(u);
   })
-  .catch(err => {
-  })
+  .catch(err => {})
   .finally(() => {
     checkDomainAvailability([...list], [...result], callback);
   });
@@ -125,7 +108,7 @@ function getInstance() {
       resolve(list);
     })
     .catch(err => {
-      throw(err);
+      reject(err);
     });
   });
 }
@@ -140,11 +123,11 @@ function getAvailableInvidiousInstance() {
           resolve(result);
         });
       } catch (err) {
-        throw(err);
+        reject(err);
       }
     })
     .catch(err => {
-      throw(err);
+      reject(err);
     });
   });
 }

@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "2.1.1",
   "name": "YT Music",
   "description": "YT Music client",
   "launch_path": "/index.html",
@@ -42,9 +42,6 @@
     },
     "video-capture": {
       "description": "Required for qr-code reader(playlist id qr-code)"
-    },
-    "tcp-socket": {
-      "description": "Check host SSL Cert(Lets Encrypt)"
     }
   },
   "locales": {
