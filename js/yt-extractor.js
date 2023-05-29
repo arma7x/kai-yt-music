@@ -1,4 +1,4 @@
-window['_INVIDIOUS_INSTANCE_'] = window.localStorage.getItem('_INVIDIOUS_INSTANCE_') || 'inv.riverside.rocks';
+window['_INVIDIOUS_INSTANCE_'] = 'vid.puffyan.us';
 
 const XHR_HEADER = {
   'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
@@ -286,14 +286,15 @@ function getVideoLinks(id) {
     } else if (result.adaptiveFormats) {
       var formats = [];
       for (var x in result.adaptiveFormats) {
-        // var p = new URL(result.adaptiveFormats[x].url);
-        // p.host = window['_INVIDIOUS_INSTANCE_'];
+        var p = new URL(result.adaptiveFormats[x].url);
+        p.host = window['_INVIDIOUS_INSTANCE_'];
         formats.push({
           id: id,
           mimeType: result.adaptiveFormats[x].type.split(';')[0], // mimeType
           bitrate: result.adaptiveFormats[x].bitrate,
           signatureCipher: result.adaptiveFormats[x].signatureCipher || null,
-          url: result.adaptiveFormats[x].url, // p.toString(),
+          // url: result.adaptiveFormats[x].url, // p.toString(),
+          url: p.toString(),
           player: result.player || null,
           width: result.adaptiveFormats[x].width || 0,
           height: result.adaptiveFormats[x].height || 0,
