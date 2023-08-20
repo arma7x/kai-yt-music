@@ -8,6 +8,14 @@
     }
   </style>
   <ul class="kui-list kai-container">
+    <li class="settingNav kui-divider" @click="changeInvidious()">
+      <div class="kui-row-center" style="justify-content:space-between;">
+        <span>Audio Source</span>
+        <span class="badge-setting">
+          {{#invidious}}Invidious{{/invidious}}{{^invidious}}Youtube{{/invidious}}
+        </span>
+      </div>
+    </li>
     <li class="settingNav kui-divider" @click="changeAutoSleep()">
       <div class="kui-row-center" style="justify-content:space-between;">
         <span>Sleep Timer</span>

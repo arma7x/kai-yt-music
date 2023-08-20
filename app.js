@@ -158,6 +158,7 @@ window.addEventListener("load", () => {
     SHUFFLE: false,
     AUTOPLAY: JSON.parse(localStorage.getItem('AUTOPLAY')) || false,
     AUTOSLEEP: JSON.parse(localStorage.getItem('AUTOSLEEP')) || false,
+    INVIDIOUS: JSON.parse(localStorage.getItem('INVIDIOUS')) || false,
   });
 
   const MAIN_PLAYER = document.createElement("audio");
@@ -935,6 +936,10 @@ window.addEventListener("load", () => {
         if (data['AUTOPLAY'] != null) {
           obj['autoplay'] = JSON.parse(data['AUTOPLAY']);
         }
+        if (data['AUTOPLAY'] != null) {
+          obj['invidious'] = JSON.parse(data['INVIDIOUS']);
+          window['INVIDIOUS'] = obj['invidious'];
+        }
         this.setData(obj);
       },
       changeAutoSleep: function() {
@@ -961,6 +966,12 @@ window.addEventListener("load", () => {
         const value = !this.data.autoplay;
         localStorage.setItem('AUTOPLAY', value);
         this.$state.setState('AUTOPLAY', JSON.parse(localStorage.getItem('AUTOPLAY')));
+      },
+      changeInvidious: function() {
+        const value = !this.data.invidious;
+        window['INVIDIOUS'] = value;
+        localStorage.setItem('INVIDIOUS', value);
+        this.$state.setState('INVIDIOUS', JSON.parse(localStorage.getItem('INVIDIOUS')));
       },
       renderSoftKeyText: function() {
         setTimeout(() => {

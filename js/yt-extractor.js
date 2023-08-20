@@ -1,4 +1,5 @@
 window['_INVIDIOUS_INSTANCE_'] = 'vid.puffyan.us';
+window['INVIDIOUS'] = JSON.parse(localStorage.getItem('INVIDIOUS')) || false;
 
 const XHR_HEADER = {
   'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
@@ -287,7 +288,8 @@ function getVideoLinks(id) {
       var formats = [];
       for (var x in result.adaptiveFormats) {
         var p = new URL(result.adaptiveFormats[x].url);
-        p.host = window['_INVIDIOUS_INSTANCE_'];
+        if (window['INVIDIOUS'])
+          p.host = window['_INVIDIOUS_INSTANCE_'];
         formats.push({
           id: id,
           mimeType: result.adaptiveFormats[x].type.split(';')[0], // mimeType
