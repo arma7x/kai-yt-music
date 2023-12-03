@@ -207,14 +207,13 @@ function fallbackV2(id) {
     return Promise.resolve(res.response);
   })
   .catch((e) => {
-    // console.log('Invidious Error', e);
     alert('Invidious Error');
     return Promise.reject('Invidious Error');
   })
 }
 
 function execute(id) {
-  return xhr('GET', `https://www.youtube.com/get_video_info?video_id=${id}&html5=1`, {}, {}, XHR_HEADER)
+  return xhr('GET', `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}&html5=1`, {}, {}, XHR_HEADER)
   .then((res) => {
     try {
       var c = JSON.parse(parse_str(res.response).player_response);
@@ -315,13 +314,13 @@ function getVideoLinks(id) {
 
 function getPlaylistVideos(id) {
   return new Promise((resolve, reject) => {
-    xhr('GET', `https://${window['_INVIDIOUS_INSTANCE_']}/api/v1/playlists/${id}`, {}, {})
+    xhr('GET', 'https://malaysiaapi-arma7x.koyeb.app/youtube/api/playlist', {}, {id:id})
     .then((result) => {
-      const videos = result.response.videos;
+      const videos = result.response;
       if (videos.length > 0) {
-        //videos.sort((a, b) => {
-        //  return new Date(a['publishedAt']).getTime() - new Date(b['publishedAt']).getTime();
-        //});
+        videos.sort((a, b) => {
+          return new Date(a['publishedAt']).getTime() - new Date(b['publishedAt']).getTime();
+        });
         resolve(videos);
       } else
         reject('Empty');
