@@ -1238,6 +1238,7 @@ window.addEventListener("load", () => {
                 setTimeout(() => {
                   result = result.filter((v) => {
                     if (_selected.collections.indexOf(v.id) === -1) {
+                      v.id = v.videoId;
                       v.checked = true;
                       v.text = v.title;
                       return true;
@@ -2341,6 +2342,7 @@ window.addEventListener("load", () => {
         .then((result) => {
           setTimeout(() => {
             result.forEach((v) => {
+              v.id = v.videoId;
               v.checked = true;
               v.text = v.title;
             });

@@ -207,6 +207,7 @@ function fallbackV2(id) {
     return Promise.resolve(res.response);
   })
   .catch((e) => {
+    // console.log('Invidious Error', e);
     alert('Invidious Error');
     return Promise.reject('Invidious Error');
   })
@@ -314,13 +315,13 @@ function getVideoLinks(id) {
 
 function getPlaylistVideos(id) {
   return new Promise((resolve, reject) => {
-    xhr('GET', 'https://malaysiaapi-arma7x.koyeb.app/youtube/api/playlist', {}, {id:id})
+    xhr('GET', `https://${window['_INVIDIOUS_INSTANCE_']}/api/v1/playlists/${id}`, {}, {})
     .then((result) => {
-      const videos = result.response;
+      const videos = result.response.videos;
       if (videos.length > 0) {
-        videos.sort((a, b) => {
-          return new Date(a['publishedAt']).getTime() - new Date(b['publishedAt']).getTime();
-        });
+        //videos.sort((a, b) => {
+        //  return new Date(a['publishedAt']).getTime() - new Date(b['publishedAt']).getTime();
+        //});
         resolve(videos);
       } else
         reject('Empty');
